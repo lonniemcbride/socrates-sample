@@ -605,41 +605,76 @@ function formatSourceBlock(sources) {
 function addMessage(text, sender) {
     const div = document.createElement('div');
     div.className = `message ${sender}`;
-    const avatar = document.createElement('div');
-    avatar.className = 'message-avatar';
-    avatar.innerHTML = sender === 'socrates' ? '&#x2694;' : '&#x1F464;';
-    const content = document.createElement('div');
-    content.className = 'message-content';
+    const body = document.createElement('div');
+    body.className = 'msg-body';
     const urlRegex = /(https?:\/\/[^\s\)]+)/g;
-    text.split('\n\n').forEach(p => {
+    
+    // Split into main content and source block
+    const sourceIdx = text.indexOf('--- Primary Sources ---');
+    const mainText = sourceIdx > -1 ? text.substring(0, sourceIdx).trim() : text;
+    const sourceText = sourceIdx > -1 ? text.substring(sourceIdx) : '';
+    
+    mainText.split('\n\n').forEach(p => {
         const el = document.createElement('p');
         const parts = p.split(urlRegex);
         parts.forEach(part => {
             if (urlRegex.test(part)) {
                 const a = document.createElement('a');
                 a.href = part; a.target = '_blank'; a.rel = 'noopener noreferrer';
-                a.textContent = '[source]'; a.style.color = '#e94560';
-                el.appendChild(a);
+                a.textContent = 'source'; el.appendChild(a);
             } else { el.appendChild(document.createTextNode(part)); }
             urlRegex.lastIndex = 0;
         });
-        content.appendChild(el);
+        body.appendChild(el);
     });
-    div.appendChild(avatar);
-    div.appendChild(content);
+    
+    // Source citation block (styled separately)
+    if (sourceText) {
+        const srcDiv = document.createElement('div');
+        srcDiv.className = 'sources';
+        const lines = sourceText.split('\n').filter(l => l.trim());
+        lines.forEach(line => {
+            if (line.startsWith('---')) return;
+            const srcLine = document.createElement('div');
+            const parts = line.split(urlRegex);
+            parts.forEach(part => {
+                if (urlRegex.test(part)) {
+                    const a = document.createElement('a');
+                    a.href = part; a.target = '_blank'; a.rel = 'noopener noreferrer';
+                    a.textContent = 'link'; srcLine.appendChild(a);
+                } else { srcLine.appendChild(document.createTextNode(part)); }
+                urlRegex.lastIndex = 0;
+            });
+            srcDiv.appendChild(srcLine);
+        });
+        body.appendChild(srcDiv);
+    }
+    
+    div.appendChild(body);
     chatContainer.appendChild(div);
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
 function showTyping(text) {
+    setStatus('Searching');
     const div = document.createElement('div');
-    div.className = 'message socrates'; div.id = 'typingIndicator';
-    div.innerHTML = `<div class="message-avatar">&#x2694;</div><div class="message-content"><div class="typing-indicator"><span></span><span></span><span></span></div>${text ? `<p style="font-size:0.8rem;color:#a0a0b0;font-style:italic;margin-top:0.4rem">${text}</p>` : ''}</div>`;
+    div.className = 'typing'; div.id = 'typingIndicator';
+    div.innerHTML = `<span></span><span></span><span></span>${text ? `<span class="typing-label">${text}</span>` : ''}`;
     chatContainer.appendChild(div);
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-function hideTyping() { document.getElementById('typingIndicator')?.remove(); }
+function hideTyping() {
+    document.getElementById('typingIndicator')?.remove();
+    setStatus('Ready');
+}
+
+function setStatus(text) {
+    const el = document.querySelector('.status-text');
+    const dot = document.querySelector('.dot');
+    if (el) el.textContent = text;
+    if (dot) dot.style.background = text === 'Ready' ? 'var(--green)' : 'var(--accent)';
+}
 
 userInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 120) + 'px'; });
 userInput.addEventListener('keydown', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); inputForm.dispatchEvent(new Event('submit')); } });
@@ -664,15 +699,15 @@ inputForm.addEventListener('submit', async function(e) {
         await new Promise(r => setTimeout(r, 800));
         hideTyping();
         const resp = `You're contradicting yourself. Earlier you said: "${contradiction.substring(0, 80)}..." — but now you're arguing the opposite. You can't have it both ways. Pick a position and defend it consistently, or acknowledge that your thinking has evolved. Inconsistency is the most exploitable weakness in any argument.`;
-        addMessage(resp, 'socrates');
-        conversationHistory.push({ role: 'socrates', content: resp });
+        addMessage(resp, 'senator');
+        conversationHistory.push({ role: 'senator', content: resp });
         return;
     }
     
     // Search primary sources and build counter-argument simultaneously
     const wordCount = message.split(/\s+/).length;
     if (wordCount >= 5 && SEARCH_CONFIG.enabled) {
-        showTyping('Searching peer-reviewed research & government publications...');
+        showTyping('Searching research databases...');
         try {
             const query = buildSearchQuery(message);
             const sources = await searchAllPrimarySources(query);
@@ -688,22 +723,22 @@ inputForm.addEventListener('submit', async function(e) {
                 counter += '\n\n(No relevant primary sources found for this specific claim. The above counter-argument is based on established logical and rhetorical principles.)';
             }
             
-            addMessage(counter, 'socrates');
-            conversationHistory.push({ role: 'socrates', content: counter });
+            addMessage(counter, 'senator');
+            conversationHistory.push({ role: 'senator', content: counter });
         } catch (err) {
             hideTyping();
             const counter = buildDirectCounter(message, []);
             counter += '\n\n(Source search encountered an error. Counter-argument based on logical principles.)';
-            addMessage(counter, 'socrates');
-            conversationHistory.push({ role: 'socrates', content: counter });
+            addMessage(counter, 'senator');
+            conversationHistory.push({ role: 'senator', content: counter });
         }
     } else {
         showTyping('');
         await new Promise(r => setTimeout(r, 600));
         hideTyping();
         const counter = buildDirectCounter(message, []);
-        addMessage(counter, 'socrates');
-        conversationHistory.push({ role: 'socrates', content: counter });
+        addMessage(counter, 'senator');
+        conversationHistory.push({ role: 'senator', content: counter });
     }
 });
 

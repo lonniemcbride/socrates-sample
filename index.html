@@ -3,40 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Devil's Advocate</title>
+    <title>Senator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="app-container">
-        <header class="app-header">
-            <div class="header-icon">&#x1F3DB;</div>
-            <h1>Devil's Advocate</h1>
-            <p class="subtitle">I don't ask questions. I make counter-arguments backed by primary sources.</p>
-        </header>
-
-        <div class="chat-container" id="chatContainer">
-            <div class="message socrates">
-                <div class="message-avatar">&#x1F3DB;</div>
-                <div class="message-content">
-                    <p>State your position. I will construct the strongest possible counter-argument against it, citing peer-reviewed research from Semantic Scholar, OpenAlex, and PubMed, plus government publications from US (data.gov), UK (gov.uk), and EU sources.</p>
-                    <p>I don't ask questions. I argue back — with evidence, logic, and direct opposing positions. If I can't find primary sources to contradict you, I'll tell you so honestly.</p>
+    <div class="app">
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">S</div>
+                <div class="header-text">
+                    <h1>Senator</h1>
+                    <p>Counter-arguments backed by primary sources</p>
                 </div>
             </div>
-        </div>
+            <div class="header-status" id="statusDot">
+                <span class="dot"></span>
+                <span class="status-text">Ready</span>
+            </div>
+        </header>
 
-        <form class="input-area" id="inputForm">
-            <textarea 
-                id="userInput" 
-                placeholder="State your position..." 
-                rows="1"
-                autofocus
-            ></textarea>
-            <button type="submit" id="sendBtn" title="Send">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"/>
-                </svg>
-            </button>
-        </form>
+        <main class="chat" id="chatContainer">
+            <div class="message senator">
+                <div class="msg-body">
+                    <p>Make a claim. I'll build the strongest case against it using peer-reviewed research and government publications.</p>
+                </div>
+            </div>
+        </main>
+
+        <footer class="input-bar">
+            <form id="inputForm" class="input-form">
+                <textarea id="userInput" placeholder="State your position..." rows="1" autofocus></textarea>
+                <button type="submit" id="sendBtn" aria-label="Send">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </button>
+            </form>
+        </footer>
     </div>
 
     <script src="app.js"></script>

@@ -390,3 +390,29 @@ html, body {
     .input-bar { padding: 0.75rem 1rem 1rem; }
     .app::before { width: 300px; height: 200px; }
 }
+
+
+
+/* Arena link in input bar */
+.arena-link {
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.arena-link a {
+    font-size: 0.6875rem;
+    color: var(--text-3);
+    text-decoration: none;
+    font-weight: 500;
+    padding: 0.25rem 0.625rem;
+    border-radius: 100px;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    transition: all 0.15s;
+}
+
+.arena-link a:hover {
+    color: var(--accent-2);
+    border-color: var(--border-active);
+    background: var(--accent-glow);
+}

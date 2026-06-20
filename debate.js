@@ -638,6 +638,19 @@ debateInput.addEventListener('keydown', function(e) {
 // and shows which article supports or contradicts each point.
 // ============================================================
 
+function extractKeywords(text) {
+    const stopWords = new Set(['the','a','an','is','are','was','were','be','been','have','has','had','do','does','did','will','would','could','should','may','might','to','of','in','for','on','with','at','by','from','as','and','or','but','not','that','this','it','its','they','them','their','we','our','you','your','he','she','which','been','being','into','more','most','also','than','very','just','about','these','those','would','could','should']);
+    return text.toLowerCase().split(/\s+/).filter(w => w.length > 4 && !stopWords.has(w)).slice(0, 10);
+}
+
+function topicOverlap(claimA, claimB) {
+    const kwA = new Set(claimA.keywords || extractKeywords(claimA.text || ''));
+    const kwB = new Set(claimB.keywords || extractKeywords(claimB.text || ''));
+    let overlap = 0;
+    for (const w of kwA) { if (kwB.has(w)) overlap++; }
+    return overlap >= 2;
+}
+
 function generateSummary(userClaim, state, sources) {
     const { advocateArguments, senatorArguments } = state;
     

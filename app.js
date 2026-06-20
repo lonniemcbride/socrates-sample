@@ -779,60 +779,60 @@ function truncate(str, maxLen) {
 
 // ============================================================
 // PRIMARY SOURCE SEARCH & CONCESSION ENGINE
-// Uses web search to find contradicting primary sources.
-// Concedes when no contradicting evidence can be found.
+// Uses actual primary sources: peer-reviewed papers, government data,
+// and academic research databases. NOT Wikipedia or secondary sources.
 // ============================================================
-
-// Primary source domains — only trusted, authoritative sources
-const PRIMARY_SOURCE_DOMAINS = [
-    // Government & institutional
-    'gov', 'edu', 'org',
-    // Specific trusted sources
-    'who.int', 'un.org', 'worldbank.org', 'imf.org',
-    'cdc.gov', 'nih.gov', 'nasa.gov', 'noaa.gov',
-    'bls.gov', 'census.gov', 'fbi.gov', 'supremecourt.gov',
-    // Academic & research
-    'nature.com', 'science.org', 'thelancet.com', 'bmj.com',
-    'nejm.org', 'pubmed.ncbi.nlm.nih.gov', 'scholar.google.com',
-    'jstor.org', 'arxiv.org', 'ssrn.com', 'researchgate.net',
-    // Data & statistics
-    'ourworldindata.org', 'statista.com', 'pewresearch.org',
-    'gallup.com', 'data.gov', 'eurostat.ec.europa.eu',
-    // Legal
-    'law.cornell.edu', 'oyez.org', 'courtlistener.com',
-    // Historical
-    'archives.gov', 'loc.gov', 'britannica.com',
-    // News of record (primary reporting only)
-    'reuters.com', 'apnews.com', 'c-span.org'
-];
-
-// Wikipedia API for factual verification (free, no key needed)
-const WIKI_API = 'https://en.wikipedia.org/api/rest_v1/page/summary/';
-const WIKI_SEARCH_API = 'https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srsearch=';
 
 // Search configuration
 const SEARCH_CONFIG = {
     enabled: true,
-    // Uses Wikipedia + Wikidata as free primary source (no API key needed)
-    // For production, integrate Google Fact Check API, Semantic Scholar, etc.
-    maxResults: 5,
-    timeout: 8000
+    timeout: 10000,
+    // Primary source APIs (all free, no API key required for basic use):
+    // 1. Semantic Scholar — 200M+ peer-reviewed academic papers
+    // 2. OpenAlex — 250M+ scholarly works (papers, datasets, theses)
+    // 3. PubMed/NCBI — Biomedical and life sciences research
+    // 4. CORE — Open access research papers
+    sources: ['semanticScholar', 'openAlex', 'pubmed']
+};
+
+// API endpoints for actual primary sources
+const PRIMARY_SOURCE_APIS = {
+    // Semantic Scholar: peer-reviewed papers from all scientific fields
+    // Free, no auth needed for up to 100 requests/5 minutes
+    semanticScholar: {
+        search: 'https://api.semanticscholar.org/graph/v1/paper/search',
+        fields: 'title,abstract,year,citationCount,journal,authors,url,tldr',
+        name: 'Semantic Scholar',
+        type: 'peer-reviewed research'
+    },
+    // OpenAlex: open catalog of scholarly works (papers, books, datasets)
+    // Completely free, no auth needed
+    openAlex: {
+        search: 'https://api.openalex.org/works',
+        name: 'OpenAlex',
+        type: 'scholarly works'
+    },
+    // PubMed/NCBI: biomedical and life sciences
+    // Free, no auth needed for basic queries
+    pubmed: {
+        search: 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi',
+        summary: 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi',
+        name: 'PubMed (NIH/NCBI)',
+        type: 'biomedical research'
+    }
 };
 
 // Extract the core factual claim from user message
 function extractFactualClaim(message) {
-    // Remove filler words and extract the substantive claim
     const cleaned = message
         .replace(/\b(i think|i believe|in my opinion|i feel like|it seems|obviously|clearly)\b/gi, '')
         .replace(/\b(that|which|who|whom)\b/gi, '')
         .trim();
     
-    // Extract key noun phrases and claims
     const sentences = cleaned.split(/[.!?]+/).filter(s => s.trim().length > 10);
     if (sentences.length === 0) return null;
     
-    // Return the most substantive sentence (longest with factual indicators)
-    const factualIndicators = /\b(is|are|was|were|causes?|leads?|proves?|shows?|created?|invented?|discovered?|found|established|began|started|ended|died|born|built|wrote|said)\b/i;
+    const factualIndicators = /\b(is|are|was|were|causes?|leads?|proves?|shows?|created?|invented?|discovered?|found|established|began|started|ended|died|born|built|wrote|said|increases?|decreases?|affects?|effects?)\b/i;
     
     const factualSentences = sentences.filter(s => factualIndicators.test(s));
     if (factualSentences.length > 0) {
@@ -843,166 +843,264 @@ function extractFactualClaim(message) {
 
 // Build search query from claim
 function buildSearchQuery(claim) {
-    // Extract key terms (nouns and verbs, skip stop words)
-    const stopWords = new Set(['the','a','an','is','are','was','were','be','been','being','have','has','had','do','does','did','will','would','could','should','may','might','shall','can','need','dare','ought','used','to','of','in','for','on','with','at','by','from','as','into','through','during','before','after','above','below','between','out','off','over','under','again','further','then','once','here','there','when','where','why','how','all','each','every','both','few','more','most','other','some','such','no','nor','not','only','own','same','so','than','too','very','just','because','but','and','or','if','while','that','this','these','those','it','its','they','them','their','we','our','you','your','he','him','his','she','her','i','my','me']);
+    const stopWords = new Set(['the','a','an','is','are','was','were','be','been','being','have','has','had','do','does','did','will','would','could','should','may','might','shall','can','need','dare','ought','used','to','of','in','for','on','with','at','by','from','as','into','through','during','before','after','above','below','between','out','off','over','under','again','further','then','once','here','there','when','where','why','how','all','each','every','both','few','more','most','other','some','such','no','nor','not','only','own','same','so','than','too','very','just','because','but','and','or','if','while','that','this','these','those','it','its','they','them','their','we','our','you','your','he','him','his','she','her','i','my','me','think','believe','feel']);
     
     const words = claim.toLowerCase()
         .replace(/[^a-z0-9\s]/g, '')
         .split(/\s+/)
         .filter(w => w.length > 2 && !stopWords.has(w));
     
-    // Take the most important words (first 6)
-    return words.slice(0, 6).join(' ');
+    return words.slice(0, 8).join(' ');
 }
 
-// Search Wikipedia for relevant information
-async function searchWikipedia(query) {
+// Search Semantic Scholar for peer-reviewed papers
+async function searchSemanticScholar(query) {
     try {
-        const response = await fetch(`${WIKI_SEARCH_API}${encodeURIComponent(query)}&srlimit=3`, {
+        const url = `${PRIMARY_SOURCE_APIS.semanticScholar.search}?query=${encodeURIComponent(query)}&limit=5&fields=${PRIMARY_SOURCE_APIS.semanticScholar.fields}`;
+        const response = await fetch(url, {
             signal: AbortSignal.timeout(SEARCH_CONFIG.timeout)
         });
-        if (!response.ok) return null;
+        if (!response.ok) return [];
         
         const data = await response.json();
-        if (!data.query || !data.query.search || data.query.search.length === 0) return null;
+        if (!data.data || data.data.length === 0) return [];
         
-        return data.query.search.map(result => ({
-            title: result.title,
-            snippet: result.snippet.replace(/<[^>]+>/g, ''), // Strip HTML
-            source: `https://en.wikipedia.org/wiki/${encodeURIComponent(result.title)}`,
-            type: 'encyclopedia'
+        return data.data.map(paper => ({
+            title: paper.title,
+            snippet: paper.tldr?.text || paper.abstract?.substring(0, 300) || '',
+            source: paper.url || `https://www.semanticscholar.org/paper/${paper.paperId}`,
+            year: paper.year,
+            citations: paper.citationCount,
+            journal: paper.journal?.name || 'Unknown journal',
+            authors: (paper.authors || []).slice(0, 3).map(a => a.name).join(', '),
+            type: 'peer-reviewed paper',
+            database: 'Semantic Scholar'
         }));
     } catch (e) {
-        console.log('Wikipedia search failed:', e.message);
-        return null;
+        console.log('Semantic Scholar search failed:', e.message);
+        return [];
     }
 }
 
-// Get Wikipedia summary for a specific topic
-async function getWikiSummary(title) {
+// Search OpenAlex for scholarly works
+async function searchOpenAlex(query) {
     try {
-        const response = await fetch(`${WIKI_API}${encodeURIComponent(title)}`, {
-            signal: AbortSignal.timeout(SEARCH_CONFIG.timeout)
+        const url = `${PRIMARY_SOURCE_APIS.openAlex.search}?search=${encodeURIComponent(query)}&per_page=5&select=id,title,abstract_inverted_index,publication_year,cited_by_count,primary_location,authorships`;
+        const response = await fetch(url, {
+            signal: AbortSignal.timeout(SEARCH_CONFIG.timeout),
+            headers: { 'Accept': 'application/json' }
         });
-        if (!response.ok) return null;
+        if (!response.ok) return [];
         
         const data = await response.json();
-        return {
-            title: data.title,
-            extract: data.extract,
-            source: data.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(title)}`,
-            type: 'primary_summary'
-        };
+        if (!data.results || data.results.length === 0) return [];
+        
+        return data.results.map(work => {
+            // Reconstruct abstract from inverted index
+            let abstract = '';
+            if (work.abstract_inverted_index) {
+                const words = [];
+                for (const [word, positions] of Object.entries(work.abstract_inverted_index)) {
+                    for (const pos of positions) {
+                        words[pos] = word;
+                    }
+                }
+                abstract = words.join(' ').substring(0, 300);
+            }
+            
+            const source = work.primary_location?.landing_page_url || work.id;
+            const journal = work.primary_location?.source?.display_name || 'Unknown source';
+            const authors = (work.authorships || []).slice(0, 3).map(a => a.author?.display_name).filter(Boolean).join(', ');
+            
+            return {
+                title: work.title || 'Untitled',
+                snippet: abstract,
+                source: source,
+                year: work.publication_year,
+                citations: work.cited_by_count,
+                journal: journal,
+                authors: authors,
+                type: 'scholarly work',
+                database: 'OpenAlex'
+            };
+        });
     } catch (e) {
-        console.log('Wiki summary failed:', e.message);
-        return null;
+        console.log('OpenAlex search failed:', e.message);
+        return [];
     }
+}
+
+// Search PubMed for biomedical research
+async function searchPubMed(query) {
+    try {
+        // Step 1: Search for paper IDs
+        const searchUrl = `${PRIMARY_SOURCE_APIS.pubmed.search}?db=pubmed&term=${encodeURIComponent(query)}&retmax=3&retmode=json`;
+        const searchResponse = await fetch(searchUrl, {
+            signal: AbortSignal.timeout(SEARCH_CONFIG.timeout)
+        });
+        if (!searchResponse.ok) return [];
+        
+        const searchData = await searchResponse.json();
+        const ids = searchData.esearchresult?.idlist || [];
+        if (ids.length === 0) return [];
+        
+        // Step 2: Get summaries for found papers
+        const summaryUrl = `${PRIMARY_SOURCE_APIS.pubmed.summary}?db=pubmed&id=${ids.join(',')}&retmode=json`;
+        const summaryResponse = await fetch(summaryUrl, {
+            signal: AbortSignal.timeout(SEARCH_CONFIG.timeout)
+        });
+        if (!summaryResponse.ok) return [];
+        
+        const summaryData = await summaryResponse.json();
+        const results = [];
+        
+        for (const id of ids) {
+            const paper = summaryData.result?.[id];
+            if (!paper) continue;
+            
+            results.push({
+                title: paper.title || 'Untitled',
+                snippet: paper.sorttitle || paper.title || '',
+                source: `https://pubmed.ncbi.nlm.nih.gov/${id}/`,
+                year: parseInt(paper.pubdate?.split(' ')[0]) || null,
+                citations: null,
+                journal: paper.fulljournalname || paper.source || 'Unknown journal',
+                authors: (paper.authors || []).slice(0, 3).map(a => a.name).join(', '),
+                type: 'biomedical research',
+                database: 'PubMed (NIH)'
+            });
+        }
+        
+        return results;
+    } catch (e) {
+        console.log('PubMed search failed:', e.message);
+        return [];
+    }
+}
+
+// Search all primary source databases in parallel
+async function searchAllPrimarySources(query) {
+    const searches = [
+        searchSemanticScholar(query),
+        searchOpenAlex(query),
+        searchPubMed(query)
+    ];
+    
+    const results = await Promise.allSettled(searches);
+    
+    let allResults = [];
+    for (const result of results) {
+        if (result.status === 'fulfilled' && result.value.length > 0) {
+            allResults = [...allResults, ...result.value];
+        }
+    }
+    
+    // Sort by citation count (most-cited = most established research)
+    allResults.sort((a, b) => (b.citations || 0) - (a.citations || 0));
+    
+    return allResults;
 }
 
 // Determine if search results contradict the user's claim
 function analyzeContradiction(claim, searchResults) {
     if (!searchResults || searchResults.length === 0) {
-        return { contradicts: false, results: [] };
+        return { contradicts: false, results: [], hasRelevantSources: false };
     }
     
     const claimLower = claim.toLowerCase();
     const contradictionIndicators = [];
+    const supportingIndicators = [];
     
     for (const result of searchResults) {
-        const snippet = (result.snippet || result.extract || '').toLowerCase();
+        const snippet = (result.snippet || '').toLowerCase();
+        if (!snippet || snippet.length < 20) continue;
         
-        // Check if the source material contradicts common patterns
-        const score = calculateContradictionScore(claimLower, snippet);
+        const relevanceScore = calculateRelevanceScore(claimLower, snippet);
+        if (relevanceScore < 2) continue; // Not relevant enough
         
-        if (score > 0) {
+        const contradictionScore = calculateContradictionScore(claimLower, snippet);
+        
+        if (contradictionScore >= 3) {
             contradictionIndicators.push({
                 ...result,
-                contradictionScore: score,
-                relevantExcerpt: truncate(result.snippet || result.extract || '', 200)
+                contradictionScore,
+                relevanceScore,
+                relevantExcerpt: truncate(result.snippet || '', 250)
+            });
+        } else if (relevanceScore >= 3) {
+            supportingIndicators.push({
+                ...result,
+                relevanceScore,
+                relevantExcerpt: truncate(result.snippet || '', 250)
             });
         }
     }
     
-    // Sort by contradiction score
     contradictionIndicators.sort((a, b) => b.contradictionScore - a.contradictionScore);
     
     return {
-        contradicts: contradictionIndicators.length > 0 && contradictionIndicators[0].contradictionScore >= 2,
-        results: contradictionIndicators.slice(0, 3)
+        contradicts: contradictionIndicators.length > 0,
+        results: contradictionIndicators.slice(0, 3),
+        supportingResults: supportingIndicators.slice(0, 2),
+        hasRelevantSources: contradictionIndicators.length > 0 || supportingIndicators.length > 0
     };
+}
+
+function calculateRelevanceScore(claim, sourceText) {
+    const claimWords = claim.split(/\s+/).filter(w => w.length > 4);
+    const sourceWords = new Set(sourceText.split(/\s+/));
+    
+    let sharedTerms = 0;
+    for (const word of claimWords) {
+        if (sourceWords.has(word)) sharedTerms++;
+    }
+    return sharedTerms;
 }
 
 function calculateContradictionScore(claim, sourceText) {
     let score = 0;
     
-    // Check for negation patterns in source that oppose claim
-    const claimWords = claim.split(/\s+/).filter(w => w.length > 4);
-    const sourceWords = new Set(sourceText.split(/\s+/));
+    const contradictionSignals = [
+        'however', 'contrary', 'disproven', 'debunked', 'no evidence',
+        'not supported', 'disputed', 'controversial', 'criticized',
+        'refuted', 'overturned', 'revised', 'failed to replicate',
+        'no significant', 'did not find', 'inconclusive', 'contradicts',
+        'no correlation', 'no association', 'negative results',
+        'myth', 'misconception', 'false', 'incorrect', 'inaccurate'
+    ];
     
-    // Relevance: do the source and claim share key terms?
-    let sharedTerms = 0;
-    for (const word of claimWords) {
-        if (sourceWords.has(word)) sharedTerms++;
-    }
-    if (sharedTerms < 2) return 0; // Not relevant enough
-    
-    score += Math.min(sharedTerms, 4); // Up to 4 points for relevance
-    
-    // Check for contradiction signals in the source
-    const contradictionWords = ['however', 'contrary', 'disproven', 'debunked', 'false', 'incorrect', 'myth', 'misconception', 'no evidence', 'not supported', 'disputed', 'controversial', 'criticized', 'refuted', 'overturned', 'revised', 'although', 'despite', 'nevertheless', 'actually', 'in fact'];
-    
-    for (const word of contradictionWords) {
-        if (sourceText.includes(word)) score += 1;
+    for (const signal of contradictionSignals) {
+        if (sourceText.includes(signal)) score += 2;
     }
     
-    // Check for numerical disagreements
-    const claimNumbers = claim.match(/\d+/g) || [];
-    const sourceNumbers = sourceText.match(/\d+/g) || [];
-    if (claimNumbers.length > 0 && sourceNumbers.length > 0) {
-        // If both have numbers and they differ, possible factual disagreement
-        for (const cn of claimNumbers) {
-            for (const sn of sourceNumbers) {
-                if (cn !== sn && Math.abs(parseInt(cn) - parseInt(sn)) > 0) {
-                    score += 1;
-                    break;
-                }
-            }
-        }
+    // Weaker signals
+    const weakSignals = ['although', 'despite', 'nevertheless', 'whereas', 'in contrast', 'alternatively', 'competing', 'debate'];
+    for (const signal of weakSignals) {
+        if (sourceText.includes(signal)) score += 1;
     }
     
     return score;
 }
 
-// Main function: search for primary sources and respond
+// Main function: search primary sources and respond
 async function searchAndRespond(userMessage) {
     const claim = extractFactualClaim(userMessage);
-    if (!claim || claim.length < 15) return null; // Too short to verify
+    if (!claim || claim.length < 15) return null;
     
     const query = buildSearchQuery(claim);
     if (!query || query.length < 5) return null;
     
-    // Search Wikipedia (free, reliable, cites primary sources)
-    const searchResults = await searchWikipedia(query);
-    
-    // If we got search results, try to get detailed summaries
-    let detailedResults = [];
-    if (searchResults && searchResults.length > 0) {
-        // Get summary of the top result
-        const summary = await getWikiSummary(searchResults[0].title);
-        if (summary) {
-            detailedResults.push(summary);
-        }
-        detailedResults = [...detailedResults, ...searchResults];
-    }
+    // Search actual primary source databases (peer-reviewed research)
+    const searchResults = await searchAllPrimarySources(query);
     
     // Analyze whether sources contradict the claim
-    const analysis = analyzeContradiction(claim, detailedResults);
+    const analysis = analyzeContradiction(claim, searchResults);
     
     return {
         claim,
         query,
         analysis,
-        results: detailedResults
+        results: searchResults
     };
 }
 
@@ -1015,31 +1113,41 @@ function buildSourceBackedCounter(searchResult) {
     const { claim, analysis, results } = searchResult;
     
     if (analysis.contradicts && analysis.results.length > 0) {
-        // We found contradicting primary sources — present them
+        // We found contradicting peer-reviewed research — present it
         const topSource = analysis.results[0];
         const sourceUrl = topSource.source;
         const excerpt = topSource.relevantExcerpt;
+        const sourceInfo = topSource.authors ? `${topSource.authors} (${topSource.year || 'n.d.'})` : topSource.title;
+        const journalInfo = topSource.journal ? `, published in ${topSource.journal}` : '';
+        const citationInfo = topSource.citations ? ` [cited ${topSource.citations} times]` : '';
         
         const intros = [
-            `I found primary source material that challenges your claim.`,
-            `Interesting — the evidence from primary sources tells a different story.`,
-            `I've consulted the primary sources, and they push back on your position.`,
-            `The available primary source evidence complicates your claim significantly.`
+            `I found peer-reviewed research that challenges your claim.`,
+            `The academic literature tells a different story than the one you're presenting.`,
+            `I've searched the primary research databases, and the published evidence pushes back on your position.`,
+            `Peer-reviewed studies complicate your claim significantly.`
         ];
         const intro = intros[Math.floor(Math.random() * intros.length)];
         
         let response = `${intro}\n\n`;
-        response += `According to ${topSource.title} (${sourceUrl}):\n"${excerpt}"\n\n`;
+        response += `From ${topSource.database}: "${topSource.title}" by ${sourceInfo}${journalInfo}${citationInfo}\n`;
+        response += `Source: ${sourceUrl}\n`;
+        if (excerpt) {
+            response += `Finding: "${truncate(excerpt, 200)}"\n\n`;
+        } else {
+            response += `\n`;
+        }
         
         if (analysis.results.length > 1) {
-            response += `Additional source: ${analysis.results[1].title} (${analysis.results[1].source})\n\n`;
+            const second = analysis.results[1];
+            response += `Additional research: "${second.title}" (${second.database}) — ${second.source}\n\n`;
         }
         
         const challenges = [
-            `How do you reconcile your position with this evidence? Does your argument survive this counter-factual, or does it require revision?`,
-            `This source directly challenges your claim. Can you account for this discrepancy, or does your position need to be modified?`,
-            `Primary sources suggest your claim may be incomplete or inaccurate. Would you like to refine your argument in light of this evidence?`,
-            `The factual record appears to be at odds with your assertion. Do you have counter-evidence from primary sources, or will you revise your position?`
+            `This peer-reviewed research directly challenges your claim. How do you reconcile your position with published findings? Do you have counter-evidence from primary research?`,
+            `The published literature appears to contradict your assertion. Can you cite primary research that supports your position, or does this require revision?`,
+            `Academic research from ${topSource.database} suggests your claim may be incomplete or inaccurate. A strong argument requires engaging with the best available evidence — how do you respond to this?`,
+            `Primary source evidence from the research literature is at odds with your statement. In rigorous debate, the person with peer-reviewed evidence on their side has a significant advantage. Can you overcome this?`
         ];
         response += challenges[Math.floor(Math.random() * challenges.length)];
         
@@ -1050,15 +1158,17 @@ function buildSourceBackedCounter(searchResult) {
 }
 
 function buildConcession(searchResult, userMessage) {
-    // The app concedes when it cannot find contradicting primary sources
+    // The app concedes when it cannot find contradicting peer-reviewed research
+    const databases = 'Semantic Scholar, OpenAlex, and PubMed';
+    
     const concessions = [
-        `I've searched the primary sources available to me, and I cannot find evidence that directly contradicts your statement. On this point, I'll concede — your claim appears to be supported, or at minimum, not contradicted by the factual record I can access.\n\nThat said — being factually correct doesn't mean your conclusion necessarily follows. The facts may be right while the interpretation remains debatable. Is there an interpretive claim underneath the factual one that we should examine?`,
+        `I've searched the peer-reviewed literature across ${databases}, and I cannot find published research that directly contradicts your statement. On this point, I'll concede — your claim appears to be supported by, or at minimum not contradicted by, the available primary research.\n\nThat said — being factually correct doesn't mean your conclusion necessarily follows. The facts may be right while the interpretation remains debatable. Is there an interpretive claim underneath the factual one that we should examine?`,
         
-        `I'll be honest: I looked for primary source evidence to challenge your claim, and I couldn't find any. Credit where it's due — your statement appears to hold up against the available evidence.\n\nBut let me pivot: even well-supported facts can be used to build flawed arguments. The fact may be solid; is the conclusion you're drawing from it equally solid? That's a different question.`,
+        `I'll be honest: I searched ${databases} for peer-reviewed evidence to challenge your claim, and I couldn't find any. Credit where it's due — your statement appears to hold up against the published research.\n\nBut let me pivot: even well-supported facts can be used to build flawed arguments. The fact may be solid; is the conclusion you're drawing from it equally solid? That's a different question.`,
         
-        `I concede this point. The primary sources I can access do not contradict your claim. A good dialectician knows when to yield ground — and this ground appears to be yours.\n\nHowever, conceding a fact is not the same as conceding an argument. Facts are building blocks; arguments are structures. Your brick may be sound, but is the wall you're building with it structurally sound?`,
+        `I concede this point. The peer-reviewed primary sources I can access across ${databases} do not contradict your claim. A good dialectician knows when to yield ground — and this ground appears to be yours.\n\nHowever, conceding a fact is not the same as conceding an argument. Facts are building blocks; arguments are structures. Your brick may be sound, but is the wall you're building with it structurally sound?`,
         
-        `Fair enough — I cannot counter this with primary source evidence. Your claim stands unchallenged on the factual level. I acknowledge that.\n\nNow: does this factual correctness prove everything you want it to prove? Or is there a gap between "this fact is true" and "therefore my broader conclusion is correct"? Let's explore that gap.`
+        `Fair enough — I cannot counter this with peer-reviewed research from ${databases}. Your claim stands unchallenged at the level of primary sources. I acknowledge that.\n\nNow: does this factual correctness prove everything you want it to prove? Or is there a gap between "this fact is true" and "therefore my broader conclusion is correct"? Let's explore that gap.`
     ];
     
     return concessions[Math.floor(Math.random() * concessions.length)];
@@ -1200,13 +1310,13 @@ inputForm.addEventListener('submit', async function(e) {
     
     if (isFactualClaim && SEARCH_CONFIG.enabled) {
         // Show searching indicator
-        addTypingIndicator('Searching primary sources...');
+        addTypingIndicator('Searching peer-reviewed research...');
         
         try {
             // Search for contradicting primary sources
             const searchResult = await searchAndRespond(message);
             
-            updateTypingIndicator('Analyzing sources...');
+            updateTypingIndicator('Analyzing research findings...');
             await delay(500);
             
             removeTypingIndicator();

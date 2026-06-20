@@ -183,17 +183,19 @@ function advocateRebuttal(senatorArg, userClaim, sources, round) {
     }
     
     // Bring in fresh evidence from sources
-    const freshSource = sources[Math.min(round, sources.length - 1)];
-    if (freshSource && freshSource.snippet) {
-        const freshAnalysis = analyzeSourceContent(freshSource);
-        arg += `Fresh supporting evidence: ${freshSource.title} (${freshSource.authors || freshSource.database}, ${freshSource.year || 'n.d.'})`;
-        if (freshAnalysis.findings.length > 0) {
-            arg += `\nThis study specifically found: ${freshAnalysis.findings[0]}`;
+    if (sources.length > 0) {
+        const freshSource = sources[Math.min(round, sources.length - 1)];
+        if (freshSource && freshSource.snippet) {
+            const freshAnalysis = analyzeSourceContent(freshSource);
+            arg += `\n\nFresh supporting evidence: ${freshSource.title} (${freshSource.authors || freshSource.database}, ${freshSource.year || 'n.d.'})`;
+            if (freshAnalysis.findings.length > 0) {
+                arg += `\nThis study specifically found: ${freshAnalysis.findings[0]}`;
+            }
+            if (freshAnalysis.numbers.length > 0) {
+                arg += `\nQuantitative result: ${freshAnalysis.numbers[0]}`;
+            }
+            arg += `\nThis directly addresses the opposition's concerns by providing ${freshAnalysis.methodology ? 'methodologically rigorous (' + freshAnalysis.methodology + ')' : 'independent'} evidence in support of the original claim.`;
         }
-        if (freshAnalysis.numbers.length > 0) {
-            arg += `\nQuantitative result: ${freshAnalysis.numbers[0]}`;
-        }
-        arg += `\nThis directly addresses the opposition's concerns by providing ${freshAnalysis.methodology ? 'methodologically rigorous (' + freshAnalysis.methodology + ')' : 'independent'} evidence in support of the original claim.`;
     }
     
     if (round >= DEBATE_CONFIG.maxRounds) {
@@ -304,21 +306,23 @@ function senatorRebuttal(advocateArg, userClaim, sources, round) {
     }
     
     // If Advocate made specific claims, counter them with source analysis
-    if (advocateClaims.length > 0 && sources.length > round - 1) {
+    if (advocateClaims.length > 0 && sources.length > 0) {
         const counterSource = sources[Math.min(round - 1, sources.length - 1)];
-        const counterAnalysis = analyzeSourceContent(counterSource);
-        
-        arg += `Counter-evidence from ${counterSource.title} (${counterSource.authors || counterSource.database}, ${counterSource.year || 'n.d.'}):\n`;
-        if (counterAnalysis.findings.length > 0) {
-            arg += `Finding: ${counterAnalysis.findings[0]}\n`;
+        if (counterSource && counterSource.snippet) {
+            const counterAnalysis = analyzeSourceContent(counterSource);
+            
+            arg += `Counter-evidence from ${counterSource.title} (${counterSource.authors || counterSource.database}, ${counterSource.year || 'n.d.'}):\n`;
+            if (counterAnalysis.findings.length > 0) {
+                arg += `Finding: ${counterAnalysis.findings[0]}\n`;
+            }
+            if (counterAnalysis.numbers.length > 0) {
+                arg += `Data: ${counterAnalysis.numbers[0]}\n`;
+            }
+            if (counterAnalysis.limitations.length > 0) {
+                arg += `Acknowledged limitation: ${counterAnalysis.limitations[0]}\n`;
+            }
+            arg += `This research introduces complications that the Advocate's case hasn't addressed.\n\n`;
         }
-        if (counterAnalysis.numbers.length > 0) {
-            arg += `Data: ${counterAnalysis.numbers[0]}\n`;
-        }
-        if (counterAnalysis.limitations.length > 0) {
-            arg += `Acknowledged limitation: ${counterAnalysis.limitations[0]}\n`;
-        }
-        arg += `This research introduces complications that the Advocate's case hasn't addressed.\n\n`;
     }
     
     // Closing in final round
@@ -496,18 +500,14 @@ const SENATOR_COUNTERS = {
 
 async function startDebate(userClaim) {
     debateState = {
-        active: true,
-        round: 0,
-        userClaim: userClaim,
-        advocateArguments: [],
-        senatorArguments: [],
-        allClaims: [],
-        stopped: false
+        active: true, round: 0, userClaim: userClaim,
+        advocateArguments: [], senatorArguments: [], allClaims: [], stopped: false
     };
     
-    // Show controls, hide input form
     debateForm.style.display = 'none';
     debateControls.style.display = 'flex';
+    
+    try {
     
     // Search for sources that BOTH bots will use
     updateStatus('Searching primary sources...');
@@ -557,13 +557,34 @@ async function startDebate(userClaim) {
     updateStatus('Analyzing debate...');
     await delay(800);
     
-    generateSummary(userClaim, debateState, allSources);
+    try {
+        generateSummary(userClaim, debateState, allSources);
+    } catch (e) {
+        console.error('Summary generation failed:', e);
+        // Fallback: show a basic summary
+        const content = document.getElementById('summaryContent');
+        const status = document.getElementById('summaryStatus');
+        status.textContent = 'Complete';
+        content.innerHTML = '<div class="summary-verdict">The debate has concluded. Both sides presented arguments across ' + debateState.round + ' rounds. Review the arguments in the panels to the left.</div>';
+    }
     
     // Reset UI
     debateState.active = false;
     debateControls.style.display = 'none';
     debateForm.style.display = 'flex';
-    roundLabel.textContent = 'Debate complete — see summary below';
+    roundLabel.textContent = 'Debate complete — see Fact Check panel';
+    
+    } catch (err) {
+        console.error('Debate error:', err);
+        updateStatus('Error occurred');
+        const content = document.getElementById('summaryContent');
+        const status = document.getElementById('summaryStatus');
+        if (status) status.textContent = 'Error';
+        if (content) content.innerHTML = '<div class="summary-verdict">An error occurred during the debate: ' + (err.message || 'Unknown error') + '. Check browser console for details.</div>';
+        debateState.active = false;
+        debateControls.style.display = 'none';
+        debateForm.style.display = 'flex';
+    }
 }
 
 function updateStatus(text) {
@@ -644,8 +665,8 @@ function extractKeywords(text) {
 }
 
 function topicOverlap(claimA, claimB) {
-    const kwA = new Set(claimA.keywords || extractKeywords(claimA.text || ''));
-    const kwB = new Set(claimB.keywords || extractKeywords(claimB.text || ''));
+    const kwA = new Set(claimA.keywords || extractKeywords(claimA.text || claimA.finding || ''));
+    const kwB = new Set(claimB.keywords || extractKeywords(claimB.text || claimB.finding || ''));
     let overlap = 0;
     for (const w of kwA) { if (kwB.has(w)) overlap++; }
     return overlap >= 2;
@@ -711,25 +732,43 @@ function generateSummary(userClaim, state, sources) {
         });
     }
     
-    // If no specific evidence was extracted, create entries from raw sources
-    if (results.length === 0 && analyzedSources.length > 0) {
-        for (const s of analyzedSources.slice(0, 4)) {
-            if (s.analysis.findings.length > 0) {
-                results.push({
-                    text: s.analysis.findings[0],
-                    finding: s.analysis.findings[0],
-                    status: 'validated',
-                    side: 'Source',
-                    sourceTitle: s.title,
-                    sourceAuthors: s.authors,
-                    sourceYear: s.year,
-                    sourceUrl: s.source,
-                    refutedByText: null,
-                    refutedBySource: null,
-                    refutedByUrl: null
-                });
-            }
-        }
+    // If no specific evidence was extracted, create entries from the debate arguments themselves
+    if (results.length === 0) {
+        // Extract claims directly from what the bots said
+        const advocateSentences = state.advocateArguments.join(' ').split(/[.!]+/).filter(s => s.trim().length > 50 && /\b(found|show|demonstrate|evidence|significant|increase|decrease|cause|effect|percent|study|research)\b/i.test(s));
+        const senatorSentences = state.senatorArguments.join(' ').split(/[.!]+/).filter(s => s.trim().length > 50 && /\b(however|but|only|small|weak|flaw|limit|fail|not|unlikely|overstat|insufficient)\b/i.test(s));
+        
+        advocateSentences.slice(0, 3).forEach(s => {
+            results.push({
+                text: s.trim().substring(0, 180),
+                finding: s.trim().substring(0, 120),
+                status: senatorSentences.length > 0 ? 'refuted' : 'validated',
+                side: 'Advocate',
+                sourceTitle: 'Debate argument',
+                sourceAuthors: '',
+                sourceYear: null,
+                sourceUrl: '',
+                refutedByText: senatorSentences.length > 0 ? senatorSentences[0].trim().substring(0, 150) : null,
+                refutedBySource: senatorSentences.length > 0 ? 'Senator counter-argument' : null,
+                refutedByUrl: ''
+            });
+        });
+        
+        senatorSentences.slice(0, 3).forEach(s => {
+            results.push({
+                text: s.trim().substring(0, 180),
+                finding: s.trim().substring(0, 120),
+                status: advocateSentences.length > 0 ? 'refuted' : 'validated',
+                side: 'Senator',
+                sourceTitle: 'Debate argument',
+                sourceAuthors: '',
+                sourceYear: null,
+                sourceUrl: '',
+                refutedByText: advocateSentences.length > 0 ? advocateSentences[0].trim().substring(0, 150) : null,
+                refutedBySource: advocateSentences.length > 0 ? 'Advocate counter-argument' : null,
+                refutedByUrl: ''
+            });
+        });
     }
     
     renderSummary(userClaim, results);

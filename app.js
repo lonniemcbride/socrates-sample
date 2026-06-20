@@ -819,6 +819,28 @@ const PRIMARY_SOURCE_APIS = {
         summary: 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi',
         name: 'PubMed (NIH/NCBI)',
         type: 'biomedical research'
+    },
+    // US Government Publications: policy, reports, statistics, legislation
+    // Free, no auth needed (CKAN API on catalog.data.gov)
+    usGov: {
+        search: 'https://catalog.data.gov/api/3/action/package_search',
+        name: 'US Government (data.gov)',
+        type: 'government publication'
+    },
+    // UK Government Publications: policy papers, guidance, statistics, research
+    // Free, no auth needed (gov.uk Search API)
+    ukGov: {
+        search: 'https://www.gov.uk/api/search.json',
+        name: 'UK Government (gov.uk)',
+        type: 'government publication'
+    },
+    // EU Publications Office: legislation, reports, policy, official journals
+    // Free, no auth needed
+    euPublications: {
+        search: 'https://op.europa.eu/webapi/rdf/sparql',
+        searchAlt: 'https://data.europa.eu/api/hub/search/search',
+        name: 'EU Publications Office',
+        type: 'government publication'
     }
 };
 
@@ -978,12 +1000,120 @@ async function searchPubMed(query) {
     }
 }
 
+// Search US Government publications (data.gov CKAN API)
+async function searchUSGov(query) {
+    try {
+        const url = `${PRIMARY_SOURCE_APIS.usGov.search}?q=${encodeURIComponent(query)}&rows=4`;
+        const response = await fetch(url, {
+            signal: AbortSignal.timeout(SEARCH_CONFIG.timeout)
+        });
+        if (!response.ok) return [];
+        
+        const data = await response.json();
+        if (!data.result || !data.result.results || data.result.results.length === 0) return [];
+        
+        return data.result.results.map(dataset => {
+            const org = dataset.organization?.title || 'US Government';
+            const notes = dataset.notes || '';
+            const url = dataset.url || `https://catalog.data.gov/dataset/${dataset.name}`;
+            
+            return {
+                title: dataset.title || 'Untitled',
+                snippet: notes.substring(0, 300),
+                source: url,
+                year: dataset.metadata_created ? new Date(dataset.metadata_created).getFullYear() : null,
+                citations: null,
+                journal: org,
+                authors: org,
+                type: 'US government publication',
+                database: 'US Government (data.gov)'
+            };
+        });
+    } catch (e) {
+        console.log('US Gov search failed:', e.message);
+        return [];
+    }
+}
+
+// Search UK Government publications (gov.uk Search API)
+async function searchUKGov(query) {
+    try {
+        const url = `${PRIMARY_SOURCE_APIS.ukGov.search}?q=${encodeURIComponent(query)}&count=4&filter_format=research-and-statistics,policy-paper,guidance,statistical-data-set,official-statistics`;
+        const response = await fetch(url, {
+            signal: AbortSignal.timeout(SEARCH_CONFIG.timeout)
+        });
+        if (!response.ok) return [];
+        
+        const data = await response.json();
+        if (!data.results || data.results.length === 0) return [];
+        
+        return data.results.map(result => {
+            const org = result.organisations?.[0]?.title || result.organisation_content_ids?.[0] || 'UK Government';
+            
+            return {
+                title: result.title || 'Untitled',
+                snippet: result.description || '',
+                source: `https://www.gov.uk${result.link}`,
+                year: result.public_timestamp ? new Date(result.public_timestamp).getFullYear() : null,
+                citations: null,
+                journal: org,
+                authors: org,
+                type: 'UK government publication',
+                database: 'UK Government (gov.uk)'
+            };
+        });
+    } catch (e) {
+        console.log('UK Gov search failed:', e.message);
+        return [];
+    }
+}
+
+// Search EU Publications (data.europa.eu CKAN-compatible API)
+async function searchEUPublications(query) {
+    try {
+        const url = `${PRIMARY_SOURCE_APIS.euPublications.searchAlt}?q=${encodeURIComponent(query)}&limit=4&filter=country:http://publications.europa.eu/resource/authority/country`;
+        const response = await fetch(url, {
+            signal: AbortSignal.timeout(SEARCH_CONFIG.timeout),
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!response.ok) return [];
+        
+        const data = await response.json();
+        const results = data.result?.results || data.results || [];
+        if (results.length === 0) return [];
+        
+        return results.slice(0, 4).map(result => {
+            const title = result.title?.en || result.title || (typeof result.title === 'object' ? Object.values(result.title)[0] : 'Untitled');
+            const description = result.description?.en || result.description || (typeof result.description === 'object' ? Object.values(result.description)[0] : '');
+            const publisher = result.catalog?.publisher?.name || result.publisher?.name || 'European Union';
+            
+            return {
+                title: typeof title === 'string' ? title : 'EU Publication',
+                snippet: (typeof description === 'string' ? description : '').substring(0, 300),
+                source: result.access_url || result.landing_page || result.id || 'https://data.europa.eu',
+                year: result.issued ? new Date(result.issued).getFullYear() : null,
+                citations: null,
+                journal: typeof publisher === 'string' ? publisher : 'European Union',
+                authors: typeof publisher === 'string' ? publisher : 'European Union',
+                type: 'EU government publication',
+                database: 'EU Publications Office'
+            };
+        });
+    } catch (e) {
+        console.log('EU Publications search failed:', e.message);
+        return [];
+    }
+}
+
 // Search all primary source databases in parallel
 async function searchAllPrimarySources(query) {
     const searches = [
         searchSemanticScholar(query),
         searchOpenAlex(query),
-        searchPubMed(query)
+        searchPubMed(query),
+        searchUSGov(query),
+        searchUKGov(query),
+        searchEUPublications(query)
     ];
     
     const results = await Promise.allSettled(searches);
@@ -996,6 +1126,7 @@ async function searchAllPrimarySources(query) {
     }
     
     // Sort by citation count (most-cited = most established research)
+    // Government sources without citations ranked by relevance (kept in order)
     allResults.sort((a, b) => (b.citations || 0) - (a.citations || 0));
     
     return allResults;
@@ -1125,7 +1256,7 @@ function buildSourceBackedCounter(searchResult) {
             `I found peer-reviewed research that challenges your claim.`,
             `The academic literature tells a different story than the one you're presenting.`,
             `I've searched the primary research databases, and the published evidence pushes back on your position.`,
-            `Peer-reviewed studies complicate your claim significantly.`
+            `Peer-reviewed studies and government publications complicate your claim significantly.`
         ];
         const intro = intros[Math.floor(Math.random() * intros.length)];
         
@@ -1140,13 +1271,32 @@ function buildSourceBackedCounter(searchResult) {
         
         if (analysis.results.length > 1) {
             const second = analysis.results[1];
-            response += `Additional research: "${second.title}" (${second.database}) — ${second.source}\n\n`;
+            const secondInfo = second.authors ? `${second.authors} (${second.year || 'n.d.'})` : '';
+            response += `Additional source: "${second.title}" ${secondInfo} (${second.database}) — ${second.source}\n\n`;
         }
+        
+        if (analysis.results.length > 2) {
+            const third = analysis.results[2];
+            response += `Also see: "${third.title}" (${third.database}) — ${third.source}\n\n`;
+        }
+        
+        // List ALL sources consulted (both contradicting and supporting)
+        response += `--- Primary Sources Consulted ---\n`;
+        const allSourcesUsed = [...analysis.results];
+        if (analysis.supportingResults) {
+            allSourcesUsed.push(...analysis.supportingResults);
+        }
+        allSourcesUsed.forEach((src, i) => {
+            const yr = src.year ? ` (${src.year})` : '';
+            const cites = src.citations ? ` [${src.citations} citations]` : '';
+            response += `${i + 1}. "${src.title}"${yr} — ${src.database}${cites}\n   ${src.source}\n`;
+        });
+        response += `\n`;
         
         const challenges = [
             `This peer-reviewed research directly challenges your claim. How do you reconcile your position with published findings? Do you have counter-evidence from primary research?`,
             `The published literature appears to contradict your assertion. Can you cite primary research that supports your position, or does this require revision?`,
-            `Academic research from ${topSource.database} suggests your claim may be incomplete or inaccurate. A strong argument requires engaging with the best available evidence — how do you respond to this?`,
+            `Academic research and official publications suggest your claim may be incomplete or inaccurate. A strong argument requires engaging with the best available evidence — how do you respond to this?`,
             `Primary source evidence from the research literature is at odds with your statement. In rigorous debate, the person with peer-reviewed evidence on their side has a significant advantage. Can you overcome this?`
         ];
         response += challenges[Math.floor(Math.random() * challenges.length)];
@@ -1154,21 +1304,37 @@ function buildSourceBackedCounter(searchResult) {
         return response;
     }
     
+    // If we have relevant but non-contradicting sources, include them in concession
+    if (analysis.hasRelevantSources && analysis.supportingResults && analysis.supportingResults.length > 0) {
+        return null; // Will trigger concession, but concession will include source list
+    }
+    
     return null; // No contradiction found — will trigger concession
 }
 
 function buildConcession(searchResult, userMessage) {
     // The app concedes when it cannot find contradicting peer-reviewed research
-    const databases = 'Semantic Scholar, OpenAlex, and PubMed';
+    const databases = 'Semantic Scholar, OpenAlex, PubMed, US Government (data.gov), UK Government (gov.uk), and EU Publications Office';
+    
+    let sourceList = '';
+    // List what sources were found (even if they don't contradict)
+    if (searchResult.results && searchResult.results.length > 0) {
+        sourceList = `\n\n--- Primary Sources Consulted (non-contradicting) ---\n`;
+        searchResult.results.slice(0, 5).forEach((src, i) => {
+            const yr = src.year ? ` (${src.year})` : '';
+            const cites = src.citations ? ` [${src.citations} citations]` : '';
+            sourceList += `${i + 1}. "${src.title}"${yr} — ${src.database}${cites}\n   ${src.source}\n`;
+        });
+    }
     
     const concessions = [
-        `I've searched the peer-reviewed literature across ${databases}, and I cannot find published research that directly contradicts your statement. On this point, I'll concede — your claim appears to be supported by, or at minimum not contradicted by, the available primary research.\n\nThat said — being factually correct doesn't mean your conclusion necessarily follows. The facts may be right while the interpretation remains debatable. Is there an interpretive claim underneath the factual one that we should examine?`,
+        `I've searched the peer-reviewed literature and government publications across ${databases}, and I cannot find published research that directly contradicts your statement. On this point, I'll concede — your claim appears to be supported by, or at minimum not contradicted by, the available primary research.\n\nThat said — being factually correct doesn't mean your conclusion necessarily follows. The facts may be right while the interpretation remains debatable. Is there an interpretive claim underneath the factual one that we should examine?${sourceList}`,
         
-        `I'll be honest: I searched ${databases} for peer-reviewed evidence to challenge your claim, and I couldn't find any. Credit where it's due — your statement appears to hold up against the published research.\n\nBut let me pivot: even well-supported facts can be used to build flawed arguments. The fact may be solid; is the conclusion you're drawing from it equally solid? That's a different question.`,
+        `I'll be honest: I searched ${databases} for peer-reviewed evidence and government data to challenge your claim, and I couldn't find any. Credit where it's due — your statement appears to hold up against the published research.\n\nBut let me pivot: even well-supported facts can be used to build flawed arguments. The fact may be solid; is the conclusion you're drawing from it equally solid? That's a different question.${sourceList}`,
         
-        `I concede this point. The peer-reviewed primary sources I can access across ${databases} do not contradict your claim. A good dialectician knows when to yield ground — and this ground appears to be yours.\n\nHowever, conceding a fact is not the same as conceding an argument. Facts are building blocks; arguments are structures. Your brick may be sound, but is the wall you're building with it structurally sound?`,
+        `I concede this point. The peer-reviewed primary sources and government publications I can access across ${databases} do not contradict your claim. A good dialectician knows when to yield ground — and this ground appears to be yours.\n\nHowever, conceding a fact is not the same as conceding an argument. Facts are building blocks; arguments are structures. Your brick may be sound, but is the wall you're building with it structurally sound?${sourceList}`,
         
-        `Fair enough — I cannot counter this with peer-reviewed research from ${databases}. Your claim stands unchallenged at the level of primary sources. I acknowledge that.\n\nNow: does this factual correctness prove everything you want it to prove? Or is there a gap between "this fact is true" and "therefore my broader conclusion is correct"? Let's explore that gap.`
+        `Fair enough — I cannot counter this with peer-reviewed research or official government publications from ${databases}. Your claim stands unchallenged at the level of primary sources. I acknowledge that.\n\nNow: does this factual correctness prove everything you want it to prove? Or is there a gap between "this fact is true" and "therefore my broader conclusion is correct"? Let's explore that gap.${sourceList}`
     ];
     
     return concessions[Math.floor(Math.random() * concessions.length)];
@@ -1290,7 +1456,7 @@ userInput.addEventListener('keydown', function(e) {
     }
 });
 
-// Handle form submission — now async for source searching
+// Handle form submission — always searches sources for counter-arguments
 inputForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     
@@ -1305,42 +1471,55 @@ inputForm.addEventListener('submit', async function(e) {
     userInput.value = '';
     userInput.style.height = 'auto';
     
-    // Determine if this claim is substantial enough for source checking
-    const isFactualClaim = isSubstantiveFactualClaim(message);
+    // Determine if message is substantive enough to search sources
+    const wordCount = message.split(/\s+/).length;
+    const shouldSearchSources = wordCount >= 6 && SEARCH_CONFIG.enabled;
     
-    if (isFactualClaim && SEARCH_CONFIG.enabled) {
+    if (shouldSearchSources) {
         // Show searching indicator
-        addTypingIndicator('Searching peer-reviewed research...');
+        addTypingIndicator('Searching peer-reviewed research & government publications...');
         
         try {
-            // Search for contradicting primary sources
-            const searchResult = await searchAndRespond(message);
+            // Search primary sources in parallel with generating logic-based response
+            const [searchResult, logicResponse] = await Promise.all([
+                searchAndRespond(message),
+                Promise.resolve(generateSocraticResponse(message))
+            ]);
             
             updateTypingIndicator('Analyzing research findings...');
-            await delay(500);
-            
+            await delay(400);
             removeTypingIndicator();
             
-            if (searchResult) {
-                // Try to build a source-backed counter-argument
+            if (searchResult && searchResult.analysis.contradicts && searchResult.analysis.results.length > 0) {
+                // Found contradicting sources — build source-backed counter
                 const sourceCounter = buildSourceBackedCounter(searchResult);
-                
                 if (sourceCounter) {
-                    // Found contradicting sources — present them
                     addMessage(sourceCounter, 'socrates');
                     conversationHistory.push({ role: 'socrates', content: sourceCounter });
-                    return;
-                } else {
-                    // No contradicting sources found — CONCEDE, then pivot
-                    const concession = buildConcession(searchResult, message);
-                    addMessage(concession, 'socrates');
-                    conversationHistory.push({ role: 'socrates', content: concession });
                     return;
                 }
             }
             
-            // Search returned nothing useful — fall through to logic-based response
-            await generateAndDisplayResponse(message);
+            // If no contradicting sources, or search returned non-contradicting results:
+            // Use the logic-based response BUT append relevant sources found
+            if (searchResult && searchResult.results && searchResult.results.length > 0) {
+                // We have sources — append them to whatever counter-argument was generated
+                let responseWithSources = logicResponse;
+                responseWithSources += buildSourceCitationBlock(searchResult.results);
+                
+                // If sources didn't contradict, note the concession on factual level
+                if (isSubstantiveFactualClaim(message) && !searchResult.analysis.contradicts) {
+                    const concessionNote = `\n\n(Note: I searched primary sources and could not find published evidence contradicting your factual claim. My challenge above is directed at the logic, framing, or interpretation — not the underlying facts.)`;
+                    responseWithSources += concessionNote;
+                }
+                
+                addMessage(responseWithSources, 'socrates');
+                conversationHistory.push({ role: 'socrates', content: responseWithSources });
+            } else {
+                // No sources found at all — deliver logic-based response alone
+                addMessage(logicResponse, 'socrates');
+                conversationHistory.push({ role: 'socrates', content: logicResponse });
+            }
             
         } catch (error) {
             removeTypingIndicator();
@@ -1354,12 +1533,39 @@ inputForm.addEventListener('submit', async function(e) {
             conversationHistory.push({ role: 'socrates', content: combined });
         }
     } else {
-        // Not a factual claim — use standard debate/Socratic response
+        // Short message — use standard debate/Socratic response without source search
         addTypingIndicator('');
-        await delay(Math.min(800 + message.length * 10, 2500));
-        await generateAndDisplayResponse(message);
+        await delay(Math.min(800 + message.length * 10, 2000));
+        removeTypingIndicator();
+        const response = generateSocraticResponse(message);
+        addMessage(response, 'socrates');
+        conversationHistory.push({ role: 'socrates', content: response });
     }
 });
+
+// Build a formatted citation block listing all primary sources used
+function buildSourceCitationBlock(sources) {
+    if (!sources || sources.length === 0) return '';
+    
+    // Deduplicate by title
+    const seen = new Set();
+    const unique = sources.filter(src => {
+        if (seen.has(src.title)) return false;
+        seen.add(src.title);
+        return true;
+    });
+    
+    let block = `\n\n--- Primary Sources Used in This Counter-Argument ---\n`;
+    unique.slice(0, 6).forEach((src, i) => {
+        const yr = src.year ? ` (${src.year})` : '';
+        const cites = src.citations ? ` [${src.citations} citations]` : '';
+        const db = src.database || 'Unknown';
+        const authors = src.authors ? ` — ${src.authors}` : '';
+        block += `${i + 1}. "${src.title}"${yr}${authors}\n   ${db}${cites}\n   ${src.source}\n`;
+    });
+    
+    return block;
+}
 
 // Determine if a message contains a substantive factual claim worth verifying
 function isSubstantiveFactualClaim(message) {
@@ -1389,13 +1595,6 @@ function isSubstantiveFactualClaim(message) {
     if (opinionPatterns.test(message)) factualScore -= 1;
     
     return factualScore >= 2; // Needs at least 2 factual indicators
-}
-
-async function generateAndDisplayResponse(message) {
-    removeTypingIndicator();
-    const response = generateSocraticResponse(message);
-    addMessage(response, 'socrates');
-    conversationHistory.push({ role: 'socrates', content: response });
 }
 
 function delay(ms) {

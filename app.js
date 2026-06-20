@@ -486,59 +486,59 @@ function buildDirectCounter(message, sources) {
 
 const COUNTERS = {
     empirical: () => pick([
-        `The research landscape is more complicated than you're presenting. Publication bias systematically inflates positive findings — studies that fail to confirm hypotheses rarely get published. The replication crisis has shown that up to 50% of published findings in some fields cannot be reproduced. Your confidence in "what the research shows" should be tempered by the systemic flaws in how research gets published and reported.`,
-        `"Studies show" is not the conversation-ender you think it is. Individual studies are data points, not verdicts. Meta-analyses frequently reveal contradictory findings. Effect sizes are often smaller than headlines suggest, sample sizes inadequate, and confounding variables uncontrolled. The honest summary of most research topics is "it's complicated."`,
-        `Your appeal to research conflates "a study found X" with "X is established fact." A single study establishes a hypothesis worth investigating, not a settled conclusion. The history of science is littered with "well-established" findings later overturned by better methodology.`
+        `I hear you, but the research picture is more complicated than that framing suggests. Publication bias systematically inflates positive findings — studies that fail to confirm hypotheses rarely get published. The replication crisis has shown that up to 50% of published findings in some fields cannot be reproduced. For example, the Open Science Collaboration's 2015 attempt to replicate 100 psychology studies found only 36% replicated successfully. The research may point a direction, but it hasn't settled this the way you're suggesting.`,
+        `I appreciate you citing research, but individual studies are data points, not verdicts. Meta-analyses frequently reveal contradictory findings across the literature — for instance, nutritional science has famously flip-flopped on eggs, fat, and coffee multiple times over decades as different studies reached different conclusions. Effect sizes are often smaller than headlines suggest, and confounding variables regularly go uncontrolled. The honest summary of most research topics is "it's complicated."`,
+        `That's a reasonable starting point, but conflating "a study found X" with "X is established fact" skips an important step. Consider that the Lancet published Andrew Wakefield's vaccine-autism study in 1998 — a peer-reviewed paper that took 12 years to retract and caused enormous damage. A single study, or even several, establishes a hypothesis worth investigating, not a settled conclusion.`
     ]),
     moral: () => pick([
-        `Your moral framework isn't universal — it's one of many competing ethical systems, each internally consistent but reaching different conclusions. A utilitarian, a deontologist, and a virtue ethicist would each evaluate this differently. You're presenting one framework's conclusion as self-evident truth. It isn't.`,
-        `Moral obligations don't exist in nature — they're constructed by societies to serve specific functions. The "should" you're invoking reflects a particular time, place, and culture. Many moral certainties of previous generations have been abandoned entirely. Your moral claim may look equally parochial to future generations.`,
-        `You're making a prescriptive claim but treating it as descriptive. The gap between "is" and "ought" — Hume's guillotine — cannot be crossed by logic alone. No amount of factual observation can generate a moral obligation without moral premises that themselves need justification.`
+        `I respect that position, but it's worth noting that your moral framework is one of several internally consistent systems that reach different conclusions on this exact issue. A utilitarian would evaluate this based on aggregate welfare outcomes, a deontologist on universal duties, and a virtue ethicist on character development — and they'd likely disagree with each other. For example, the death penalty: utilitarian arguments focus on deterrence data, deontological arguments on the right to life, and virtue ethics on what execution does to a society's character. Each framework is rigorous; none is self-evidently "right."`,
+        `I understand why you feel that way, but moral obligations don't exist independently of the frameworks that generate them. Consider that 150 years ago, the moral consensus in most Western nations held that women shouldn't vote and homosexuality was criminal. Those weren't fringe positions — they were the mainstream moral view. Your moral claim feels self-evident to you, but so did theirs to them. That's not a reason to dismiss your view, but it is a reason to hold it with more humility.`,
+        `That's a thoughtful ethical stance, but you're crossing Hume's is/ought gap without a bridge. No amount of factual observation generates a moral obligation without moral premises — and those premises are exactly what's being debated. For instance, both pro-choice and pro-life advocates often agree on the biological facts of fetal development but reach opposite moral conclusions because they weight different values (bodily autonomy vs. fetal life). The facts don't settle it.`
     ]),
     policy: () => pick([
-        `Every policy creates winners and losers — you've identified the winners and ignored the losers. The gap between policy intent and policy outcomes is massive and well-documented. Regulatory capture, perverse incentives, and unintended consequences reliably transform good-on-paper policies into real-world failures.`,
-        `You're proposing a solution without establishing that the problem requires THIS solution or that implementation is feasible. Public choice theory demonstrates that policymakers operate with their own incentives and institutional constraints. Your idealized policy will be administered by imperfect humans in imperfect institutions.`,
-        `History provides abundant evidence that policies with your stated goals have produced opposite outcomes. Rent control reduces housing supply. Prohibition increased organized crime. The War on Drugs increased incarceration without reducing drug use. Good intentions do not predict good outcomes.`
+        `I see the appeal of that policy, but every policy creates both winners and losers — and the losers are usually less visible. Consider rent control: it sounds compassionate, but economists across the political spectrum (from Paul Krugman to Thomas Sowell) agree it reduces housing supply long-term. A 2019 Stanford study of San Francisco's rent control found it reduced rental housing supply by 15%. The gap between policy intent and policy outcome is where most good ideas fail.`,
+        `That's a well-intentioned proposal, but implementation is where most policies break down. Public choice theory (Buchanan & Tullock, 1962) demonstrates that policymakers aren't benevolent planners — they respond to incentives, lobbying, and electoral pressures. The ACA's healthcare exchanges, for example, were designed to increase competition but in many counties ended up with a single insurer. Your idealized version of this policy will be administered by imperfect institutions with their own agendas.`,
+        `I understand the logic, but history has specific examples of similar policies backfiring. Prohibition (1920-1933) was designed to improve public health and reduce crime — it increased organized crime by 400% instead. The War on Drugs aimed to reduce drug use — it produced mass incarceration without meaningfully reducing consumption rates. DARE programs were intuitively sensible — rigorous evaluation showed they had zero or even negative effects on drug use. Good intentions are genuinely not predictive of good outcomes.`
     ]),
     humanNature: () => pick([
-        `Claims about "human nature" have historically served as post-hoc rationalizations for existing social arrangements. Every oppressive system — slavery, feudalism, patriarchy — was defended as "natural." Cross-cultural variation demonstrates that what feels like immutable nature is often deep cultural conditioning.`,
-        `Evolutionary psychology narratives are largely unfalsifiable just-so stories that explain everything after the fact and predict nothing in advance. For every "natural" tendency you cite, cultures exist where the opposite behavior predominates. Behavioral plasticity is the actual finding of science.`,
-        `Even granting biological tendencies, tendencies are not destinies. Civilization is precisely the project of overriding natural impulses. If "it's natural" were valid, medicine, agriculture, and every human institution would be indefensible.`
+        `That's an intuitive claim about human nature, but it's worth testing against the anthropological record. The !Kung San of the Kalahari, the Hadza of Tanzania, and the Piraha of the Amazon organize their societies in ways that contradict most Western assumptions about "natural" behavior. If human nature were as fixed as you're suggesting, we wouldn't find this degree of cross-cultural variation. What feels innate to us is often what's been so deeply conditioned that we've lost awareness of the conditioning.`,
+        `I get why that seems like human nature, but evolutionary psychology narratives often function as just-so stories. For instance, the claim that men are "naturally" more promiscuous was treated as settled science until researchers like Sarah Hrdy demonstrated equally strong evidence for female promiscuity across primate species. For every "natural" tendency you cite, there are documented cultures where the opposite behavior predominates — suggesting flexibility, not fixity, is our actual nature.`,
+        `Fair point about biology, but even granting biological tendencies, tendencies aren't destinies. We override natural impulses constantly — that's what civilization IS. We have natural impulses toward violence, yet homicide rates have declined 95% over centuries (Pinker, 2011). We have natural sugar cravings from evolution, yet many people maintain healthy diets. The existence of a tendency doesn't justify it or make it unchangeable.`
     ]),
     technology: () => pick([
-        `Technology is never neutral — it embeds the values and biases of its creators while redistributing power in non-transparent ways. Every technological revolution has produced catastrophes alongside benefits: the printing press enabled propaganda, industrialization created ecological destruction, social media enabled mass manipulation.`,
-        `"Progress" is a value judgment disguised as a description. It doesn't specify progress toward what goal, measured by whose standards, or at whose expense. The assumption that newer is better is an ideological position, not a neutral observation. Many local and traditional solutions outperform technological interventions.`,
-        `The track record of technological optimism is poor. Predictions about technology's benefits routinely ignore distributional effects, displacement effects, and dependency effects. The honest accounting of any technology must include its full cost structure.`
+        `I share some of your enthusiasm, but technology's track record is more mixed than techno-optimists acknowledge. Social media was going to democratize information — it also enabled the Myanmar genocide (UN report, 2018), mass disinformation campaigns, and measurable increases in teen depression (Haidt & Twenge, 2023). The automobile gave us freedom of movement — and 1.35 million traffic deaths per year globally (WHO). Every technology has a shadow cost, and the shadow of this one deserves honest accounting.`,
+        `I appreciate the optimism, but "progress" conceals a value judgment. Progress toward what, and for whom? The Green Revolution dramatically increased crop yields — and also destroyed soil microbiomes, created pesticide dependency, and displaced millions of small farmers. AI is increasing productivity — and also concentrating wealth, eliminating middle-skill jobs, and enabling surveillance at unprecedented scale. Neither story is wrong; both are incomplete. The full picture is more ambiguous.`,
+        `That's a compelling vision, but predictions about technology's benefits consistently ignore second-order effects. Uber was going to reduce car ownership — it increased vehicle miles traveled by 84% in cities (UC Davis, 2020). Working from home technology was going to free us — it blurred work-life boundaries and increased working hours. The benefits you're citing are real, but they're the first-order effects. The second and third-order effects often move in the opposite direction.`
     ]),
     causal: () => pick([
-        `Correlation is not causation. Causal inference requires controlling for confounders, establishing temporal precedence, eliminating reverse causation, and demonstrating mechanism. Your observational claim almost certainly reflects selective attention to confirming cases while ignoring disconfirming ones.`,
-        `The causal relationship you're asserting is almost certainly more complex than a simple A causes B model. Real-world causation involves feedback loops, mediating variables, and threshold effects. Simple causal narratives are psychologically satisfying but empirically inadequate.`,
-        `Even if the causal relationship exists, magnitude matters enormously. A factor can "cause" something while explaining only 2% of the variance — technically true but practically meaningless for decision-making.`
+        `I see the connection you're drawing, but correlation isn't causation — and there are specific reasons to doubt this particular causal claim. Consider that ice cream sales and drowning deaths are highly correlated, but ice cream doesn't cause drowning (summer causes both). Similarly, countries with more televisions have lower birth rates, but TVs don't prevent pregnancy (economic development drives both). Your causal claim needs to rule out confounders, and that's harder than it appears.`,
+        `That's a plausible mechanism, but the causal relationship is almost certainly more complex than A→B. Take the widely-cited claim that "social media causes teen depression." The actual research (Orben & Przybylski, 2019) found that screen time explains about 0.4% of the variance in well-being — less than wearing glasses or eating potatoes. Causal narratives feel satisfying but the real effect sizes are often trivially small.`,
+        `Even if that causal link exists, magnitude matters enormously. A factor can technically "cause" something while explaining only a tiny fraction of the variance. For example, living near power lines is statistically associated with childhood leukemia — but the absolute risk increase is about 0.002%. Technically causal (maybe), practically meaningless for decision-making. Is your causal claim similarly inflated in importance?`
     ]),
     absolute: () => pick([
-        `Absolute claims are empirically indefensible. "Always," "never," "all," and "none" are the vocabulary of ideology, not evidence. Reality operates in distributions. The moment a single counterexample exists — and one always does — your universal claim collapses into a tendency requiring entirely different justification.`,
-        `You're stating a universal where the evidence supports only a tendency. This is the difference between a law and a pattern, a certainty and a probability. By overstating your case, you've made it trivially easy to refute with a single counterexample.`,
-        `Absolutism in argument signals that emotional conviction has outrun evidential support. The world is characterized by exceptions and context-dependency. Anyone claiming something is "always" or "never" the case is either ignorant of counterexamples or choosing to ignore them.`
+        `I understand the impulse toward certainty, but absolute claims are empirically fragile. "Always" and "never" invite counterexamples, and counterexamples are easy to find. You said something is "always" the case — but consider: people once said the sun always rises in the east (it doesn't at the poles), that mammals never lay eggs (platypuses do), that democracies never go to war with each other (the War of 1812). A single exception transforms a universal law into a mere tendency, which requires entirely different justification.`,
+        `I appreciate the conviction, but you're stating a universal where the evidence supports only a tendency. This distinction matters: "smoking always causes cancer" is false (many lifelong smokers don't develop it), but "smoking substantially increases cancer risk" is well-established. The precise version of your claim is more defensible and more interesting. What's the more nuanced version you'd still stand behind?`,
+        `That's a strong stance, but the world is characterized by exceptions and context-dependency. Even seemingly ironclad physical "laws" have edge cases — Newtonian physics breaks down at quantum scales, general relativity breaks down at singularities. If physics can't maintain absolutes, it's unlikely that claims about human behavior, society, or policy can either.`
     ]),
     nature: () => pick([
-        `The naturalistic fallacy: inferring what ought to be from what is. Nature is amoral — it produces both cooperation and predation, nurturing and infanticide. Selecting "natural" phenomena that support your conclusion while ignoring others is cherry-picking in evolutionary clothing.`,
-        `"Natural" is an empty category for moral reasoning. Diseases are natural. Earthquakes are natural. The entire project of civilization is systematically overriding natural conditions. If you wouldn't use "it's natural" to defend tuberculosis, you can't selectively apply it here.`,
-        `Appeals to nature commit a basic error: confusing the descriptive with the normative. Evolution is descriptive biology, not prescriptive ethics. We don't derive legal systems or moral codes from nature — we construct them deliberately.`
+        `I see the intuitive appeal, but that's the naturalistic fallacy — and it has specific, devastating counterexamples. Arsenic is natural. Smallpox is natural. Tsunamis are natural. Meanwhile, eyeglasses are unnatural. Antibiotics are unnatural. Wheelchair ramps are unnatural. "Natural" clearly doesn't map onto "good" in any consistent way. The question isn't whether something is natural — it's whether it produces wellbeing, reduces suffering, or serves human flourishing.`,
+        `That's a common intuition, but consider: the "natural" state of humanity involved 50% child mortality, average lifespans of 35 years, and death from tooth infections. Every single improvement in human welfare — sanitation, medicine, agriculture, shelter — came from overriding natural conditions. If naturalness were the standard of value, we'd have to condemn virtually everything that makes life bearable.`,
+        `I understand that framing, but appeals to nature commit a basic category error: confusing "what exists" with "what should exist." Infanticide is practiced by many animal species — it's natural but not moral. Monogamy is rare in nature — that doesn't settle whether it's good for humans. Nature is descriptive biology; you're making a prescriptive argument. You need a different foundation.`
     ]),
     comparative: () => pick([
-        `Every comparative claim conceals unstated criteria. "Better" doesn't specify the measure, the beneficiary, or the time horizon. Every ranking reflects a value system. Your comparative claim is only as strong as your justification for the criteria — and that justification is absent.`,
-        `By selectively choosing metrics, you can make almost anything appear superior. The question isn't whether X outperforms Y on your chosen dimension — it's whether your chosen dimension is the right one, and why we should privilege it over dimensions where Y outperforms X.`,
-        `You're comparing across incommensurable values. The things you're ranking involve genuine tradeoffs between competing goods. Calling one "better" flattens the tradeoff into a false hierarchy.`
+        `I get why you'd rank it that way, but comparative claims always conceal their criteria. "Better" depends entirely on what you measure. The US healthcare system is "better" by innovation metrics (most new drugs are developed there) but "worse" by outcome metrics (lower life expectancy than 30 other countries despite 2x spending). Finland's education system is "better" by equity measures but "worse" by elite-track metrics. Your ranking reflects your chosen dimension — someone choosing differently would rank differently.`,
+        `That comparison makes sense from one angle, but by selectively choosing metrics, you can make almost anything appear superior. Print books are "worse" than e-readers for portability but "better" for retention and comprehension (Delgado et al., 2018 meta-analysis). Cities are "worse" for mental health but "better" for career opportunity. The things you're comparing likely involve genuine tradeoffs that a simple "better/worse" flattens into a false hierarchy.`,
+        `I see your reasoning, but you're comparing across values that may not be commensurable. Is safety more important than freedom? Is efficiency more important than resilience? Is growth more important than sustainability? These aren't questions with objectively correct answers — they're value tradeoffs. Calling one thing "better" only works within a value framework, and frameworks are chosen, not discovered.`
     ]),
     predictive: () => pick([
-        `Predictions about complex systems have a dismal track record. Tetlock's research shows expert predictions about social and political outcomes are barely better than chance — and confident predictions are often worse. Your prediction reflects confidence, not knowledge.`,
-        `You're extrapolating from current trends, but trends reverse, plateau, and interact unpredictably. The history of futurism is a graveyard of confident predictions: flying cars by 2000, paperless offices by 1990. Base rates for prediction accuracy should make you humble.`,
-        `Predicting outcomes in complex adaptive systems is fundamentally different from predicting mechanical systems. These systems involve human agency, reflexivity, and sensitivity to initial conditions. Confident prediction here isn't bold — it's epistemically reckless.`
+        `That's a reasonable forecast, but predictions about complex systems have a specifically documented failure rate. Philip Tetlock tracked 28,000 expert predictions over 20 years and found they were barely better than chance — and the most confident predictions were the least accurate. Consider specific failures: in 2007, virtually no mainstream economist predicted the 2008 financial crisis. In 2015, virtually no political analyst predicted Trump's election. Confidence in prediction is usually misplaced.`,
+        `I see why the trend line points that way, but trends reverse constantly. In 1900, the biggest urban crisis was horse manure (the "Great Horse Manure Crisis" predicted cities buried in it by 1930). In 1970, Paul Ehrlich predicted mass famine by 1980. In 2000, experts predicted peak oil within a decade. Extrapolation from current trends is the most common and most consistently wrong form of prediction.`,
+        `That might happen, but complex adaptive systems resist prediction because they involve reflexivity — the prediction itself changes behavior which changes outcomes. If everyone believed your prediction, their responses to it would alter the very conditions that generated it. This is why stock market predictions, political forecasts, and social trend projections fail so reliably. The system adapts to the forecast.`
     ]),
     general: () => pick([
-        `Your claim rests on assumptions that are contestable, evidence that is incomplete, and reasoning that skips steps. The opposing position holds that what you're asserting is at best partially true, applies only under conditions you haven't specified, and carries implications you haven't acknowledged.`,
-        `The confidence with which you've stated this is inversely proportional to the evidence supporting it. Complex claims about complex systems require epistemic humility — the acknowledgment that you might be wrong, your sources might be biased, and your framing might be one of many valid ones.`,
-        `You're treating a contested claim as settled, a perspective as a fact, or an interpretation as the only possible reading. The most rigorous thinkers on this topic disagree with each other — which means your certainty is unwarranted.`
+        `I hear your position, but let me offer the strongest case on the other side: your claim rests on assumptions that are genuinely contestable. For instance, most complex issues (and this is one) have rigorous experts on both sides — which means the evidence doesn't clearly favor either position. The fact that intelligent, well-informed people disagree about this should give both of us pause. Your framing may be one valid perspective, but it's not the only valid one.`,
+        `That's a thoughtful take, and I respect the reasoning. But here's where I'd push back: the confidence level you're expressing doesn't match the actual state of the evidence. On most complex topics, the honest answer involves more uncertainty, more "it depends," and more acknowledgment of competing considerations than any single confident claim can capture. What would a more nuanced version of your position look like?`,
+        `I appreciate you laying that out clearly. Here's my counter: you're presenting an interpretation as though it were the only reasonable reading of the situation. But the same facts, viewed through a different lens or weighted differently, support a different conclusion. The most rigorous thinkers I've encountered on this topic hold their positions with much more tentativeness than you're showing — not because they're less informed, but because they're more aware of the complexity.`
     ])
 };
 
@@ -701,37 +701,58 @@ inputForm.addEventListener('submit', async function(e) {
         showTyping('');
         await new Promise(r => setTimeout(r, 800));
         hideTyping();
-        const resp = `You're contradicting yourself. Earlier you said: "${contradiction.substring(0, 80)}..." — but now you're arguing the opposite. You can't have it both ways. Pick a position and defend it consistently, or acknowledge that your thinking has evolved. Inconsistency is the most exploitable weakness in any argument.`;
+        const resp = `Hey, hold on — you're contradicting yourself here. Earlier you said: "${contradiction.substring(0, 80)}..." but now you're saying something different. That's not necessarily bad — people's thinking evolves! But you can't hold both positions simultaneously. Which one do you actually believe at this point? I'm genuinely curious what changed.`;
         addMessage(resp, 'senator');
         conversationHistory.push({ role: 'senator', content: resp });
         return;
     }
     
-    // Search primary sources and build counter-argument simultaneously
+    // Detect URLs in the message — fetch and read them
+    const urls = extractUrls(message);
+    let fetchedContent = [];
+    
+    if (urls.length > 0) {
+        showTyping('Reading your source...');
+        fetchedContent = await fetchUserSources(urls);
+    }
+    
+    // Search primary sources and build counter-argument
     const wordCount = message.split(/\s+/).length;
     if (wordCount >= 5 && SEARCH_CONFIG.enabled) {
-        showTyping('Searching research databases...');
+        if (!urls.length) showTyping('Searching research databases...');
+        else showTyping('Searching for counter-evidence...');
+        
         try {
-            const query = buildSearchQuery(message);
+            const query = buildSearchQuery(stripUrls(message));
             const sources = await searchAllPrimarySources(query);
             hideTyping();
             
-            // Build direct counter-argument (NO questions)
-            let counter = buildDirectCounter(message, sources);
+            // Build response using fetched content + searched sources
+            let counter;
+            if (fetchedContent.length > 0) {
+                // User sent a source — read it, analyze it, argue against it with specifics
+                counter = buildSourceRebuttal(message, fetchedContent, sources);
+            } else {
+                // No URL — use standard counter-argument with specific examples from sources
+                counter = buildCounterWithExamples(message, sources);
+            }
             
             // Append primary source citations
             if (sources.length > 0) {
                 counter += formatSourceBlock(sources);
-            } else {
-                counter += '\n\n(No relevant primary sources found for this specific claim. The above counter-argument is based on established logical and rhetorical principles.)';
             }
             
             addMessage(counter, 'senator');
             conversationHistory.push({ role: 'senator', content: counter });
         } catch (err) {
             hideTyping();
-            const counter = buildDirectCounter(message, []);
-            counter += '\n\n(Source search encountered an error. Counter-argument based on logical principles.)';
+            let counter;
+            if (fetchedContent.length > 0) {
+                counter = buildSourceRebuttal(message, fetchedContent, []);
+            } else {
+                counter = buildDirectCounter(message, []);
+                counter += '\n\n(Source search encountered an error. Counter-argument based on logical principles.)';
+            }
             addMessage(counter, 'senator');
             conversationHistory.push({ role: 'senator', content: counter });
         }
@@ -739,10 +760,272 @@ inputForm.addEventListener('submit', async function(e) {
         showTyping('');
         await new Promise(r => setTimeout(r, 600));
         hideTyping();
-        const counter = buildDirectCounter(message, []);
+        let counter;
+        if (fetchedContent.length > 0) {
+            counter = buildSourceRebuttal(message, fetchedContent, []);
+        } else {
+            counter = buildDirectCounter(message, []);
+        }
         addMessage(counter, 'senator');
         conversationHistory.push({ role: 'senator', content: counter });
     }
 });
 
 window.addEventListener('load', () => userInput.focus());
+
+
+// ============================================================
+// URL DETECTION & SOURCE FETCHING
+// ============================================================
+
+function extractUrls(text) {
+    const urlRegex = /https?:\/\/[^\s\)\]\},]+/gi;
+    return (text.match(urlRegex) || []).slice(0, 3); // Max 3 URLs
+}
+
+function stripUrls(text) {
+    return text.replace(/https?:\/\/[^\s\)\]\},]+/gi, '').trim();
+}
+
+// Fetch and extract readable text from a URL
+async function fetchUserSources(urls) {
+    const results = [];
+    for (const url of urls) {
+        try {
+            // Use a CORS proxy for cross-origin requests from the browser
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+            const response = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
+            if (!response.ok) {
+                // Try without proxy (same-origin or CORS-enabled)
+                const direct = await fetch(url, { signal: AbortSignal.timeout(8000) });
+                if (!direct.ok) { results.push({ url, content: null, error: 'Failed to fetch' }); continue; }
+                const html = await direct.text();
+                results.push({ url, content: extractTextFromHtml(html), error: null });
+                continue;
+            }
+            const html = await response.text();
+            results.push({ url, content: extractTextFromHtml(html), error: null });
+        } catch (e) {
+            results.push({ url, content: null, error: e.message });
+        }
+    }
+    return results;
+}
+
+// Extract readable text from HTML
+function extractTextFromHtml(html) {
+    // Strip scripts, styles, and HTML tags
+    let text = html
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+        .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+        .replace(/<header[\s\S]*?<\/header>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/\s+/g, ' ')
+        .trim();
+    
+    // Take the most substantial portion (skip very short or boilerplate content)
+    // Return up to 3000 chars of meaningful content
+    return text.substring(0, 3000);
+}
+
+// Extract key claims and data points from fetched content
+function extractClaimsFromContent(content) {
+    if (!content || content.length < 50) return [];
+    
+    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 30);
+    const claims = [];
+    
+    // Look for sentences with data, statistics, or strong claims
+    const dataPatterns = [
+        /\d+\s*%/,                           // Percentages
+        /\d+\s*(million|billion|thousand)/i,  // Large numbers
+        /\b(study|research|data|survey|found|showed|demonstrated|concluded)\b/i,
+        /\b(increase|decrease|rise|fall|grew|declined|dropped)\b/i,
+        /\b(according to|reported|published|estimated)\b/i,
+        /\b(significant|substantial|majority|minority)\b/i
+    ];
+    
+    for (const sentence of sentences) {
+        let score = 0;
+        for (const pattern of dataPatterns) {
+            if (pattern.test(sentence)) score++;
+        }
+        if (score >= 1) {
+            claims.push(sentence.trim());
+        }
+    }
+    
+    // Also grab the first few sentences as context
+    const opening = sentences.slice(0, 3).map(s => s.trim());
+    
+    return { dataClaims: claims.slice(0, 8), context: opening };
+}
+
+
+// ============================================================
+// SOURCE REBUTTAL — Read their source and argue against it specifically
+// ============================================================
+
+function buildSourceRebuttal(message, fetchedContent, searchedSources) {
+    const successfulFetches = fetchedContent.filter(f => f.content && f.content.length > 50);
+    
+    if (successfulFetches.length === 0) {
+        // Couldn't read the source
+        const fallback = buildDirectCounter(stripUrls(message), searchedSources);
+        return `I tried to read your source but couldn't access it — the site probably blocks automated requests. No worries though, here's my counter-argument based on the claim itself:\n\n${fallback}`;
+    }
+    
+    // Analyze the fetched content
+    const sourceContent = successfulFetches[0].content;
+    const sourceUrl = successfulFetches[0].url;
+    const { dataClaims, context } = extractClaimsFromContent(sourceContent);
+    
+    let response = `OK, I read through your source (${sourceUrl}). Here's where I think it has problems:\n\n`;
+    
+    if (dataClaims.length > 0) {
+        // We found specific claims/data — argue against them directly
+        response += `Here are the specific parts I'd push back on:\n\n`;
+        
+        // Pick 2-3 specific claims to rebut
+        const toRebut = dataClaims.slice(0, 3);
+        toRebut.forEach((claim, i) => {
+            const rebuttal = generateSpecificRebuttal(claim);
+            response += `${i + 1}. The source claims: "${claim.substring(0, 120)}${claim.length > 120 ? '...' : ''}"\n`;
+            response += `   Counter: ${rebuttal}\n\n`;
+        });
+        
+        // Add broader structural critique
+        response += buildStructuralCritique(sourceContent, context);
+    } else if (context.length > 0) {
+        // No specific data claims found, but we have context
+        response += `The main argument seems to be: "${context[0].substring(0, 150)}${context[0].length > 150 ? '...' : ''}"\n\nHere's where I think that breaks down:\n\n`;
+        response += buildStructuralCritique(sourceContent, context);
+    } else {
+        // Very little content extracted
+        response += `I could only pull limited content from this page, but based on what I got:\n\n`;
+        response += buildDirectCounter(stripUrls(message), searchedSources);
+    }
+    
+    // If we have counter-sources from our search, cite the best contradicting one
+    if (searchedSources.length > 0) {
+        const best = searchedSources[0];
+        if (best.snippet && best.snippet.length > 30) {
+            response += `\n\nCounter-evidence: "${best.title}" (${best.authors || best.database}, ${best.year || 'n.d.'}) states: "${best.snippet.substring(0, 180)}${best.snippet.length > 180 ? '...' : ''}"`;
+            response += `\nSource: ${best.source}`;
+        }
+    }
+    
+    return response;
+}
+
+// Generate a specific rebuttal to a particular claim
+function generateSpecificRebuttal(claim) {
+    const c = claim.toLowerCase();
+    
+    // If it has percentage/stats — challenge the methodology
+    if (/\d+\s*%/.test(c) || /\d+\s*(million|billion)/.test(c)) {
+        return pick([
+            `This statistic lacks context. Without knowing the sample size, methodology, time period, and population studied, a number is meaningless. Statistics can be constructed to support any narrative depending on how you frame the question and who you ask.`,
+            `Numbers without methodology are rhetoric, not evidence. What was the sample? What was measured? What was excluded? How was the question framed? Different methodological choices produce wildly different numbers from the same underlying reality.`,
+            `This figure likely comes from a single study or dataset. Competing studies using different methodologies have produced contradictory numbers. A single statistic is not a settled fact — it's one data point in a contested landscape.`
+        ]);
+    }
+    
+    // If it cites a study/research
+    if (/\b(study|research|found|showed|demonstrated)\b/i.test(c)) {
+        return pick([
+            `Individual studies are data points, not conclusions. The replication crisis has demonstrated that many published findings — particularly in social sciences — fail to reproduce. Without meta-analytic confirmation across multiple independent labs, citing a single study proves nothing definitively.`,
+            `This finding exists within a publication ecosystem that systematically favors positive results. Null findings go unpublished. Researchers are incentivized to produce significant results. The study you're citing may be part of a biased sample of the actual research landscape.`,
+            `A study "finding" something is not the same as that thing being true. Methodological choices (sample selection, variable operationalization, statistical tests, control conditions) all shape outcomes. Different reasonable methodological choices might produce opposite findings.`
+        ]);
+    }
+    
+    // If it makes a causal claim
+    if (/\b(causes?|leads?\s+to|results?\s+in|due\s+to|because)\b/i.test(c)) {
+        return pick([
+            `This causal claim hasn't been established — it's been asserted. Establishing causation requires randomized controlled experiments, not observational data. The observed correlation could be driven by confounding variables, reverse causation, or selection effects that this source hasn't ruled out.`,
+            `The causal mechanism here is assumed, not demonstrated. Real-world causation is almost never as simple as A→B. There are mediators, moderators, feedback loops, and threshold effects that simple causal claims ignore entirely.`
+        ]);
+    }
+    
+    // If it makes a prediction
+    if (/\b(will|going\s+to|projected|forecast|expect)\b/i.test(c)) {
+        return pick([
+            `This is a projection, not a fact. Projections depend on models, and models depend on assumptions that may not hold. History is full of authoritative projections that were spectacularly wrong because the underlying assumptions changed.`,
+            `Forecasting complex systems has a well-documented failure rate. The confidence interval around this projection is likely far wider than presented. The source is giving you the point estimate while hiding the uncertainty.`
+        ]);
+    }
+    
+    // General rebuttal
+    return pick([
+        `This claim is stated as fact but is actually an interpretation. The same underlying data or observation can support multiple competing interpretations. This source has selected one and presented it as the only one.`,
+        `This assertion relies on framing — the way the information is presented shapes the conclusion you draw. Reframe the same facts differently and you get a different picture. The source is doing interpretive work while pretending to be merely descriptive.`,
+        `This is one perspective presented as the full picture. The source has made editorial choices about what to include, emphasize, and omit. Those choices shape the narrative more than the underlying facts do.`
+    ]);
+}
+
+// Build a structural critique of the source overall
+function buildStructuralCritique(content, context) {
+    const c = content.toLowerCase();
+    const critiques = [];
+    
+    // Check for balance
+    if (!/(however|on the other hand|critics argue|opponents say|alternatively|conversely)/i.test(c)) {
+        critiques.push(`One thing I notice: the source only presents one side. It doesn't engage with counter-arguments or acknowledge limitations. That's not necessarily dishonest, but it's advocacy rather than analysis — and advocacy sources should be weighted accordingly.`);
+    }
+    
+    // Check for sourcing
+    if (!/(according to|study|research|data from|published in)/i.test(c)) {
+        critiques.push(`The source makes claims without citing primary evidence. Without data or references to check, these are essentially opinions — and opinions, no matter how authoritatively stated, carry no more weight than any other unsupported claim.`);
+    }
+    
+    // Check for hedging/certainty
+    if (/(clearly|obviously|undeniably|without question|everyone knows|common sense)/i.test(c)) {
+        critiques.push(`I notice the source uses language like "clearly" and "obviously" — which are actually red flags. In my experience, genuine expertise is characterized by careful qualification, not blanket certainty. When someone says "obviously," they're often substituting confidence for evidence.`);
+    }
+    
+    // Check for emotional language
+    if (/(devastating|terrifying|shocking|outrageous|disgusting|alarming)/i.test(c)) {
+        critiques.push(`The source leans heavily on emotional language ("devastating," "alarming," etc.) which is a persuasion technique, not an analytical one. Strong evidence speaks for itself — it doesn't need emotional amplification to be convincing.`);
+    }
+    
+    if (critiques.length === 0) {
+        critiques.push(`Look, the source might be factually accurate on individual points. But every piece of writing makes editorial choices about what to include, emphasize, and leave out — and those choices shape the conclusion more than the raw facts do. A different set of equally valid choices would paint a different picture.`);
+    }
+    
+    return critiques.slice(0, 2).join('\n\n');
+}
+
+
+// ============================================================
+// COUNTER WITH SPECIFIC EXAMPLES — Uses source snippets as evidence
+// ============================================================
+
+function buildCounterWithExamples(message, sources) {
+    // If we have sources with actual content, use their snippets as specific examples
+    const sourcesWithContent = sources.filter(s => s.snippet && s.snippet.length > 50);
+    
+    if (sourcesWithContent.length >= 2) {
+        // Build counter-argument citing specific findings from searched sources
+        const base = buildDirectCounter(message, sources);
+        
+        let examples = '\n\nSpecific counter-evidence:';
+        sourcesWithContent.slice(0, 3).forEach((s, i) => {
+            const snippet = s.snippet.substring(0, 200);
+            examples += `\n\n${i + 1}. ${s.title} (${s.authors || s.database}, ${s.year || 'n.d.'}): "${snippet}${s.snippet.length > 200 ? '...' : ''}"`;
+        });
+        
+        return base + examples;
+    }
+    
+    // Fallback to standard counter-argument
+    return buildDirectCounter(message, sources);
+}

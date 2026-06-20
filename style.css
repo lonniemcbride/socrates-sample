@@ -32,17 +32,27 @@ html, body {
     color: var(--text);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* App shell */
 .app {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: 92vh;
+    max-height: 800px;
+    width: 100%;
     max-width: 760px;
     margin: 0 auto;
     position: relative;
     overflow: hidden;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5), 0 0 60px var(--accent-glow);
 }
 
 /* Ambient glow effect behind app */
@@ -70,6 +80,7 @@ html, body {
     position: relative;
     z-index: 2;
     backdrop-filter: blur(20px);
+    border-radius: 20px 20px 0 0;
 }
 
 .header-left {
@@ -362,6 +373,17 @@ html, body {
 
 /* Responsive */
 @media (max-width: 600px) {
+    html, body {
+        align-items: stretch;
+        justify-content: stretch;
+    }
+    .app {
+        height: 100vh;
+        max-height: none;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+    }
     .chat { padding: 1.25rem 1rem; }
     .message { max-width: 95%; }
     .header { padding: 0.875rem 1rem; }

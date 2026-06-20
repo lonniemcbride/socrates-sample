@@ -669,6 +669,12 @@ function topicOverlap(claimA, claimB) {
     const kwB = new Set(claimB.keywords || extractKeywords(claimB.text || claimB.finding || ''));
     let overlap = 0;
     for (const w of kwA) { if (kwB.has(w)) overlap++; }
+    // Also count partial word matches (e.g. "depressive" matches "depression")
+    if (overlap < 2) {
+        const stemA = [...kwA].map(w => w.substring(0, 5));
+        const stemB = [...kwB].map(w => w.substring(0, 5));
+        for (const s of stemA) { if (stemB.includes(s)) overlap++; }
+    }
     return overlap >= 2;
 }
 
@@ -695,7 +701,7 @@ function generateSummary(userClaim, state, sources) {
         
         results.push({
             text: claim.text,
-            finding: claim.finding,
+            sourceContent: claim.sourceContent,
             status: wasRefuted ? 'refuted' : 'validated',
             side: 'Advocate',
             sourceTitle: claim.sourceTitle,
@@ -703,7 +709,10 @@ function generateSummary(userClaim, state, sources) {
             sourceYear: claim.sourceYear,
             sourceUrl: claim.sourceUrl,
             refutedByText: refutedBy ? refutedBy.text : null,
+            refutedByContent: refutedBy ? refutedBy.sourceContent : null,
             refutedBySource: refutedBy ? refutedBy.sourceTitle : null,
+            refutedByAuthors: refutedBy ? refutedBy.sourceAuthors : null,
+            refutedByYear: refutedBy ? refutedBy.sourceYear : null,
             refutedByUrl: refutedBy ? refutedBy.sourceUrl : null
         });
     }
@@ -713,13 +722,12 @@ function generateSummary(userClaim, state, sources) {
         const wasRefuted = advocateEvidence.some(ac => topicOverlap(claim, ac));
         const refutedBy = wasRefuted ? advocateEvidence.find(ac => topicOverlap(claim, ac)) : null;
         
-        // Avoid duplicating if already covered above
         const isDuplicate = results.some(r => r.sourceTitle === claim.sourceTitle && topicOverlap({ keywords: extractKeywords(r.text) }, claim));
         if (isDuplicate) continue;
         
         results.push({
             text: claim.text,
-            finding: claim.finding,
+            sourceContent: claim.sourceContent,
             status: wasRefuted ? 'refuted' : 'validated',
             side: 'Senator',
             sourceTitle: claim.sourceTitle,
@@ -727,7 +735,10 @@ function generateSummary(userClaim, state, sources) {
             sourceYear: claim.sourceYear,
             sourceUrl: claim.sourceUrl,
             refutedByText: refutedBy ? refutedBy.text : null,
+            refutedByContent: refutedBy ? refutedBy.sourceContent : null,
             refutedBySource: refutedBy ? refutedBy.sourceTitle : null,
+            refutedByAuthors: refutedBy ? refutedBy.sourceAuthors : null,
+            refutedByYear: refutedBy ? refutedBy.sourceYear : null,
             refutedByUrl: refutedBy ? refutedBy.sourceUrl : null
         });
     }
@@ -739,33 +750,41 @@ function generateSummary(userClaim, state, sources) {
         const senatorSentences = state.senatorArguments.join(' ').split(/[.!]+/).filter(s => s.trim().length > 50 && /\b(however|but|only|small|weak|flaw|limit|fail|not|unlikely|overstat|insufficient)\b/i.test(s));
         
         advocateSentences.slice(0, 3).forEach(s => {
+            const refutation = senatorSentences.length > 0 ? senatorSentences[0].trim() : null;
             results.push({
                 text: s.trim().substring(0, 180),
-                finding: s.trim().substring(0, 120),
+                sourceContent: null,
                 status: senatorSentences.length > 0 ? 'refuted' : 'validated',
                 side: 'Advocate',
                 sourceTitle: 'Debate argument',
                 sourceAuthors: '',
                 sourceYear: null,
                 sourceUrl: '',
-                refutedByText: senatorSentences.length > 0 ? senatorSentences[0].trim().substring(0, 150) : null,
-                refutedBySource: senatorSentences.length > 0 ? 'Senator counter-argument' : null,
+                refutedByText: refutation ? refutation.substring(0, 180) : null,
+                refutedByContent: refutation ? refutation.substring(0, 180) : null,
+                refutedBySource: refutation ? 'Senator' : null,
+                refutedByAuthors: null,
+                refutedByYear: null,
                 refutedByUrl: ''
             });
         });
         
         senatorSentences.slice(0, 3).forEach(s => {
+            const refutation = advocateSentences.length > 0 ? advocateSentences[0].trim() : null;
             results.push({
                 text: s.trim().substring(0, 180),
-                finding: s.trim().substring(0, 120),
+                sourceContent: null,
                 status: advocateSentences.length > 0 ? 'refuted' : 'validated',
                 side: 'Senator',
                 sourceTitle: 'Debate argument',
                 sourceAuthors: '',
                 sourceYear: null,
                 sourceUrl: '',
-                refutedByText: advocateSentences.length > 0 ? advocateSentences[0].trim().substring(0, 150) : null,
-                refutedBySource: advocateSentences.length > 0 ? 'Advocate counter-argument' : null,
+                refutedByText: refutation ? refutation.substring(0, 180) : null,
+                refutedByContent: refutation ? refutation.substring(0, 180) : null,
+                refutedBySource: refutation ? 'Advocate' : null,
+                refutedByAuthors: null,
+                refutedByYear: null,
                 refutedByUrl: ''
             });
         });
@@ -785,9 +804,8 @@ function extractEvidenceBasedClaims(text, analyzedSources) {
         // Match sentence to a source it likely references
         let matchedSource = null;
         for (const s of analyzedSources) {
-            // Check if sentence mentions the source title, authors, or year
             if (s.title && trimmed.includes(s.title.substring(0, 30))) { matchedSource = s; break; }
-            if (s.authors && trimmed.includes(s.authors.split(',')[0])) { matchedSource = s; break; }
+            if (s.authors && s.authors.length > 3 && trimmed.includes(s.authors.split(',')[0].trim())) { matchedSource = s; break; }
             if (s.year && trimmed.includes(String(s.year))) { matchedSource = s; break; }
         }
         
@@ -795,18 +813,33 @@ function extractEvidenceBasedClaims(text, analyzedSources) {
         const hasEvidence = /\b(found|showed|demonstrated|reported|percent|%|\d{4}|study|research|data|evidence|significant|increase|decrease|reduce|associated)\b/i.test(trimmed);
         
         if (hasEvidence && trimmed.length > 50) {
-            // Find best matching source even without explicit reference
             if (!matchedSource && analyzedSources.length > 0) {
                 matchedSource = findBestMatchingSource(trimmed, analyzedSources);
             }
             
+            // Get the ACTUAL content from the source (not just the debate sentence)
+            let sourceContent = '';
+            if (matchedSource) {
+                // Use the source's actual snippet/abstract — this is what the article says
+                sourceContent = matchedSource.snippet || '';
+                // If the analysis found specific findings, use those
+                if (matchedSource.analysis && matchedSource.analysis.findings.length > 0) {
+                    sourceContent = matchedSource.analysis.findings[0];
+                }
+                // If numbers were found, append them
+                if (matchedSource.analysis && matchedSource.analysis.numbers.length > 0) {
+                    sourceContent += (sourceContent ? ' — ' : '') + matchedSource.analysis.numbers[0];
+                }
+            }
+            
             claims.push({
-                text: trimmed.substring(0, 180),
-                finding: matchedSource?.analysis?.findings?.[0] || trimmed.substring(0, 120),
+                text: trimmed.substring(0, 200),
+                sourceContent: sourceContent.substring(0, 250),
                 sourceTitle: matchedSource?.title || 'Debate argument',
                 sourceAuthors: matchedSource?.authors || '',
                 sourceYear: matchedSource?.year || null,
                 sourceUrl: matchedSource?.source || '',
+                sourceSnippet: matchedSource?.snippet || '',
                 keywords: extractKeywords(trimmed)
             });
         }
@@ -889,35 +922,44 @@ function createClaimCard(claim) {
     html += `<span class="claim-source-tag">${claim.side}</span>`;
     html += `</div>`;
     
-    // The specific claim
+    // The claim made during the debate
     html += `<div class="claim-text">${escapeHtml(claim.text)}</div>`;
     
-    // Specific finding from the article
-    if (claim.finding && claim.finding !== claim.text) {
+    // What the supporting source ACTUALLY says (the content from the article)
+    if (claim.sourceContent && claim.sourceContent !== claim.text) {
         html += `<div class="claim-detail">`;
-        html += `<span class="detail-label">Specific finding from article:</span>`;
-        html += escapeHtml(claim.finding);
+        html += `<span class="detail-label">What the source says:</span>`;
+        html += `"${escapeHtml(claim.sourceContent)}"`;
         html += `</div>`;
     }
     
-    // What refuted it (if refuted)
-    if (claim.status === 'refuted' && claim.refutedByText) {
+    // What specifically refutes it — show the CONTENT from the refuting source
+    if (claim.status === 'refuted') {
         html += `<div class="claim-detail" style="margin-top:0.375rem;">`;
-        html += `<span class="detail-label">Refuted by:</span>`;
-        html += escapeHtml(claim.refutedByText.substring(0, 150));
-        if (claim.refutedBySource) {
-            html += `<br><em style="font-size:0.5625rem;color:var(--text-3);">Source: ${escapeHtml(claim.refutedBySource)}</em>`;
+        html += `<span class="detail-label">Challenged by:</span>`;
+        if (claim.refutedByContent) {
+            html += `"${escapeHtml(claim.refutedByContent)}"`;
+        } else if (claim.refutedByText) {
+            html += escapeHtml(claim.refutedByText);
+        }
+        if (claim.refutedBySource && claim.refutedBySource !== 'Debate argument') {
+            html += `<br><em style="font-size:0.5625rem;color:var(--text-3);">— ${escapeHtml(claim.refutedBySource)}`;
+            if (claim.refutedByAuthors) html += `, ${escapeHtml(claim.refutedByAuthors)}`;
+            if (claim.refutedByYear) html += ` (${claim.refutedByYear})`;
+            html += `</em>`;
         }
         html += `</div>`;
     }
     
-    // Article citation
-    html += `<div class="claim-article">`;
-    html += `${escapeHtml(claim.sourceTitle)}`;
-    if (claim.sourceAuthors) html += ` — ${escapeHtml(claim.sourceAuthors)}`;
-    if (claim.sourceYear) html += ` (${claim.sourceYear})`;
-    if (claim.sourceUrl) html += `<br><a href="${escapeHtml(claim.sourceUrl)}" target="_blank" rel="noopener">View source</a>`;
-    html += `</div>`;
+    // Citing source (where the supporting claim comes from)
+    if (claim.sourceTitle && claim.sourceTitle !== 'Debate argument') {
+        html += `<div class="claim-article">`;
+        html += `Cited: ${escapeHtml(claim.sourceTitle)}`;
+        if (claim.sourceAuthors) html += ` — ${escapeHtml(claim.sourceAuthors)}`;
+        if (claim.sourceYear) html += ` (${claim.sourceYear})`;
+        if (claim.sourceUrl) html += `<br><a href="${escapeHtml(claim.sourceUrl)}" target="_blank" rel="noopener">View source</a>`;
+        html += `</div>`;
+    }
     
     card.innerHTML = html;
     return card;

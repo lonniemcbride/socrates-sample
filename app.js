@@ -670,10 +670,13 @@ function hideTyping() {
 }
 
 function setStatus(text) {
-    const el = document.querySelector('.status-text');
-    const dot = document.querySelector('.dot');
+    const el = document.getElementById('statusText');
+    const dot = document.getElementById('statusDot');
     if (el) el.textContent = text;
-    if (dot) dot.style.background = text === 'Ready' ? 'var(--green)' : 'var(--accent)';
+    if (dot) {
+        if (text === 'Ready') { dot.classList.remove('searching'); }
+        else { dot.classList.add('searching'); }
+    }
 }
 
 userInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 120) + 'px'; });

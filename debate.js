@@ -103,50 +103,57 @@ function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 // ============================================================
 // ADVOCATE BOT — Defends the user's position
+// Analyzes publication content and builds arguments from specific findings
 // ============================================================
 
 function advocateArgue(userClaim, round, senatorLastArg, sources) {
-    const sourcesWithContent = sources.filter(s => s.snippet && s.snippet.length > 30);
+    const richSources = sources.filter(s => s.snippet && s.snippet.length > 40);
     
     if (round === 1) {
-        // Opening argument — establish the position with evidence
-        return advocateOpening(userClaim, sourcesWithContent);
+        return advocateOpening(userClaim, richSources);
     } else {
-        // Rebuttal — counter Senator's specific points
-        return advocateRebuttal(senatorLastArg, userClaim, sourcesWithContent, round);
+        return advocateRebuttal(senatorLastArg, userClaim, richSources, round);
     }
 }
 
 function advocateOpening(claim, sources) {
-    let arg = '';
+    let arg = `The position that "${claim.substring(0, 80)}${claim.length > 80 ? '...' : ''}" is supported by published research. Here is the evidence:\n\n`;
     
-    // Open with a clear thesis
-    const openers = [
-        `The position that "${claim.substring(0, 80)}${claim.length > 80 ? '...' : ''}" is well-supported by available evidence. Here's the case for it:`,
-        `There are strong grounds for this position. The evidence supporting it comes from multiple independent lines of inquiry:`,
-        `This claim withstands scrutiny. The weight of evidence, properly considered, supports it for the following reasons:`
-    ];
-    arg += pick(openers) + '\n\n';
-    
-    // If we have sources, cite them specifically
-    if (sources.length >= 2) {
-        arg += `Research supports this position. ${sources[0].title} (${sources[0].authors || sources[0].database}, ${sources[0].year || 'n.d.'}) finds: "${sources[0].snippet.substring(0, 180)}${sources[0].snippet.length > 180 ? '...' : ''}"`;
-        arg += `\n\nAdditional support from ${sources[1].title} (${sources[1].database}, ${sources[1].year || 'n.d.'}): "${sources[1].snippet.substring(0, 150)}${sources[1].snippet.length > 150 ? '...' : ''}"`;
-    } else if (sources.length === 1) {
-        arg += `Published research lends support: ${sources[0].title} (${sources[0].authors || sources[0].database}, ${sources[0].year || 'n.d.'}) states: "${sources[0].snippet.substring(0, 200)}${sources[0].snippet.length > 200 ? '...' : ''}"`;
-    } else {
-        arg += pick([
-            `While specific primary sources on this exact formulation are limited, the underlying logic is sound. The claim follows from well-established principles and is consistent with the broader body of evidence in this domain.`,
-            `The position draws support from established frameworks and widely-observed patterns. Even absent a single decisive study, the convergence of evidence from multiple angles lends credibility to this view.`
-        ]);
+    if (sources.length === 0) {
+        arg += `While the primary source databases did not return results for this exact query, the position is consistent with established knowledge in this domain. The logical structure is sound: the premises are defensible and the conclusion follows from them.\n\n`;
+        arg += `The burden falls on the opposition to identify a specific flaw — not merely to express generic doubt.`;
+        return arg;
     }
     
-    // Add logical support
-    arg += '\n\n' + pick([
-        `The logical structure of this argument is straightforward: the premises are defensible, the reasoning is valid, and the conclusion follows. The burden now falls on the opposition to identify a specific flaw in the chain of reasoning — not merely to express doubt.`,
-        `This position has both empirical grounding and logical coherence. It makes specific predictions that are testable, explains observed phenomena, and is consistent with adjacent bodies of knowledge. These are the hallmarks of a well-supported claim.`,
-        `The argument stands on multiple legs: it has evidential support, logical coherence, explanatory power, and practical applicability. Dismantling it requires addressing all of these, not just raising generic methodological objections.`
-    ]);
+    // Analyze each source and extract what it actually says
+    const analyzed = sources.slice(0, 3).map(s => analyzeSourceContent(s));
+    
+    analyzed.forEach((a, i) => {
+        const s = sources[i];
+        arg += `Evidence ${i + 1}: ${s.title} (${s.authors || s.database}, ${s.year || 'n.d.'})\n`;
+        
+        if (a.findings.length > 0) {
+            arg += `Key finding: ${a.findings[0]}\n`;
+        }
+        if (a.numbers.length > 0) {
+            arg += `Data point: ${a.numbers[0]}\n`;
+        }
+        if (a.conclusion) {
+            arg += `Conclusion: ${a.conclusion}\n`;
+        }
+        arg += `[${s.citations ? s.citations + ' citations' : s.database}]\n\n`;
+    });
+    
+    // Synthesize what the sources collectively show
+    arg += `Synthesis: These ${analyzed.length} publications converge on supporting the original claim. `;
+    if (analyzed.some(a => a.numbers.length > 0)) {
+        arg += `The quantitative findings are specific and measurable. `;
+    }
+    if (analyzed.some(a => a.methodology)) {
+        const methodSource = analyzed.find(a => a.methodology);
+        arg += `Methodologically, at least one study used ${methodSource.methodology}, which strengthens the causal inference. `;
+    }
+    arg += `The opposition will need to address these specific findings — not merely raise abstract concerns about research methodology in general.`;
     
     return arg;
 }
@@ -154,51 +161,46 @@ function advocateOpening(claim, sources) {
 function advocateRebuttal(senatorArg, userClaim, sources, round) {
     let arg = '';
     
-    // Acknowledge Senator's point then counter it
-    const rebuttalOpeners = [
-        `The opposition raises points worth addressing, but they don't hold up under examination:`,
-        `These objections are familiar but ultimately insufficient to overturn the original position:`,
-        `The counter-argument has surface plausibility, but closer analysis reveals significant weaknesses:`
-    ];
-    arg += pick(rebuttalOpeners) + '\n\n';
+    // Parse what Senator specifically said and what sources Senator cited
+    const senatorCited = extractCitedSources(senatorArg);
+    const senatorClaims = extractSpecificClaims(senatorArg);
     
-    // Identify what Senator likely argued and counter it
-    const senatorLower = senatorArg.toLowerCase();
+    arg += `The opposition's argument has specific weaknesses that need to be addressed:\n\n`;
     
-    if (/replication|publication bias|methodology/i.test(senatorLower)) {
-        arg += `The replication crisis argument is overplayed here. While some fields have replication issues, this doesn't invalidate all research — it means we should weight large-scale replicated findings and meta-analyses more heavily. And the evidence supporting this position comes from precisely those robust sources. The existence of bad studies doesn't discredit good ones.`;
-    } else if (/correlation|causation|confound/i.test(senatorLower)) {
-        arg += `The "correlation isn't causation" objection is technically correct but often deployed as a thought-terminating cliché. In practice, we establish causation through converging evidence: temporal precedence, dose-response relationships, mechanistic plausibility, and ruling out alternative explanations. The evidence here satisfies multiple causal criteria, not just bare correlation.`;
-    } else if (/framework|utilitarian|deontolog|relative/i.test(senatorLower)) {
-        arg += `The moral relativism objection — "different frameworks reach different conclusions" — proves too much. By that logic, no moral claim could ever be advanced, and moral progress would be incoherent. But moral progress is real: slavery abolition, women's suffrage, and civil rights represent genuine advances, not mere preference changes. Some moral positions are better-supported than others.`;
-    } else if (/implementation|unintended|policy fail/i.test(senatorLower)) {
-        arg += `The argument that "policies sometimes fail" is true but not decisive. Policies also sometimes succeed dramatically: the Clean Air Act reduced acid rain by 80%, seatbelt mandates cut traffic fatalities by 45%, and vaccination programs eliminated smallpox. The question isn't whether any policy has ever failed — it's whether this specific proposal is well-designed and evidence-based. Cherry-picking failures while ignoring successes is selection bias.`;
-    } else if (/prediction|forecast|complex system/i.test(senatorLower)) {
-        arg += `The claim that "predictions always fail" is itself a prediction — and a falsified one. Weather forecasting has improved dramatically. Actuarial tables are highly accurate. Demographic projections are reliable over medium terms. The opposition conflates "some predictions fail" with "all prediction is impossible." Properly calibrated probabilistic forecasts are routinely useful for decision-making.`;
-    } else if (/natural|nature|evolution/i.test(senatorLower)) {
-        arg += `The naturalistic fallacy objection applies when someone argues "X is natural, therefore X is good." But the original position doesn't rely on that. It's possible to observe a natural pattern and draw conclusions from it without committing the is-ought fallacy — the key is whether the reasoning bridges that gap properly, which it does here.`;
-    } else {
+    // Directly counter Senator's specific claims
+    if (senatorClaims.length > 0) {
+        senatorClaims.slice(0, 2).forEach((claim, i) => {
+            arg += `On the point that "${claim.substring(0, 100)}${claim.length > 100 ? '...' : ''}":\n`;
+            arg += generateDirectRebuttalToCliam(claim, sources, round) + '\n\n';
+        });
+    }
+    
+    // If Senator cited a source, analyze that source and argue its limitations
+    if (senatorCited.length > 0) {
+        arg += `Regarding the opposition's cited source ("${senatorCited[0].substring(0, 80)}..."):\n`;
         arg += pick([
-            `The opposition's core strategy is to raise doubt without providing an affirmative alternative. Skepticism is easy; constructing a better explanation is hard. The position I'm defending doesn't need to be perfect — it needs to be better-supported than available alternatives. And it is.`,
-            `Notice the opposition's approach: genericized methodological objections that could be aimed at virtually any claim. But not all claims are equally uncertain. The evidence here is specific, replicated, and drawn from credible sources. General-purpose skepticism doesn't address the particular strengths of this argument.`,
-            `The opposition has attacked the general category of reasoning being used rather than the specific argument being made. That's a dodge. The question isn't whether ALL causal claims (or moral claims, or empirical claims) can be questioned — it's whether THIS particular claim survives scrutiny. And it does, for the specific reasons I've outlined.`
-        ]);
+            `This source, even taken at face value, doesn't contradict the original position — it complicates it. There's a difference between "this is more nuanced than stated" and "this is wrong." The nuance actually supports a qualified version of the claim.`,
+            `The finding cited by the opposition is compatible with the original position when properly contextualized. A single study showing complexity doesn't overturn the broader pattern established by the weight of evidence.`,
+            `This source addresses a related but different question. Its findings are relevant but not dispositive — they constrain the scope of the claim without eliminating it.`
+        ]) + '\n\n';
     }
     
-    // Add fresh evidence if available
-    if (sources.length > 0 && round <= 3) {
-        const freshSource = sources[Math.min(round, sources.length - 1)];
-        if (freshSource.snippet) {
-            arg += `\n\nFurther supporting evidence: ${freshSource.title} (${freshSource.authors || freshSource.database}, ${freshSource.year || 'n.d.'}): "${freshSource.snippet.substring(0, 160)}${freshSource.snippet.length > 160 ? '...' : ''}"`;
+    // Bring in fresh evidence from sources
+    const freshSource = sources[Math.min(round, sources.length - 1)];
+    if (freshSource && freshSource.snippet) {
+        const freshAnalysis = analyzeSourceContent(freshSource);
+        arg += `Fresh supporting evidence: ${freshSource.title} (${freshSource.authors || freshSource.database}, ${freshSource.year || 'n.d.'})`;
+        if (freshAnalysis.findings.length > 0) {
+            arg += `\nThis study specifically found: ${freshAnalysis.findings[0]}`;
         }
+        if (freshAnalysis.numbers.length > 0) {
+            arg += `\nQuantitative result: ${freshAnalysis.numbers[0]}`;
+        }
+        arg += `\nThis directly addresses the opposition's concerns by providing ${freshAnalysis.methodology ? 'methodologically rigorous (' + freshAnalysis.methodology + ')' : 'independent'} evidence in support of the original claim.`;
     }
     
-    // Closing point
-    if (round >= 3) {
-        arg += '\n\n' + pick([
-            `In summary: the original position has survived multiple rounds of challenge. The opposition has raised generic doubts but has not identified a specific fatal flaw in the reasoning or produced counter-evidence that directly contradicts the cited findings.`,
-            `The cumulative case remains strong. The opposition's strategy of raising general methodological concerns does not address the specific evidence and reasoning supporting this position. The burden has shifted: if the opposition cannot produce direct counter-evidence, the original claim stands.`
-        ]);
+    if (round >= DEBATE_CONFIG.maxRounds) {
+        arg += `\n\nIn closing: The original position has been supported by ${sources.length} peer-reviewed sources with specific, quantifiable findings. The opposition has raised methodological concerns but has not produced direct counter-evidence that falsifies the claim. The weight of specific evidence favors the original position.`;
     }
     
     return arg;
@@ -207,91 +209,248 @@ function advocateRebuttal(senatorArg, userClaim, sources, round) {
 
 // ============================================================
 // SENATOR BOT — Argues against the user's position
-// (Adapted from app.js counter-argument engine)
+// Analyzes publication content and builds counter-arguments from specific findings
 // ============================================================
 
 function senatorArgue(userClaim, round, advocateLastArg, sources) {
+    const richSources = sources.filter(s => s.snippet && s.snippet.length > 40);
+    
     if (round === 1) {
-        return senatorOpening(userClaim, sources);
+        return senatorOpening(userClaim, richSources);
     } else {
-        return senatorRebuttal(advocateLastArg, userClaim, sources, round);
+        return senatorRebuttal(advocateLastArg, userClaim, richSources, round);
     }
 }
 
 function senatorOpening(claim, sources) {
-    const msg = claim.toLowerCase();
-    let arg = '';
+    let arg = `The claim that "${claim.substring(0, 80)}${claim.length > 80 ? '...' : ''}" does not withstand critical examination. Here are the specific problems:\n\n`;
     
-    // Select category-appropriate counter-argument
-    const categories = [
-        [/\b(research|studies?|data|evidence|science)\b/i, 'empirical'],
-        [/\b(should|ought|must|wrong|right|moral|ethical)\b/i, 'moral'],
-        [/\b(government|policy|law|regulation|tax)\b/i, 'policy'],
-        [/\b(people are|humans are|human nature|evolved)\b/i, 'humanNature'],
-        [/\b(technology|ai|automation|progress|digital)\b/i, 'technology'],
-        [/\b(causes?|leads?\s+to|results?\s+in)\b/i, 'causal'],
-        [/\b(all|every|always|never|no one|everyone)\b/i, 'absolute'],
-        [/\b(will|going to|inevitably|guaranteed)\b/i, 'predictive']
-    ];
-    
-    let type = 'general';
-    for (const [pattern, t] of categories) { if (pattern.test(msg)) { type = t; break; } }
-    
-    arg = SENATOR_COUNTERS[type]();
-    
-    // Cite contradicting sources if available
-    if (sources.length > 0 && sources[0].snippet) {
-        arg += `\n\nResearch complicating this position: ${sources[0].title} (${sources[0].authors || sources[0].database}, ${sources[0].year || 'n.d.'}): "${sources[0].snippet.substring(0, 180)}${sources[0].snippet.length > 180 ? '...' : ''}"`;
+    if (sources.length === 0) {
+        arg += pick(SENATOR_COUNTERS.general());
+        return arg;
     }
+    
+    // Analyze source content to find things that complicate or contradict the claim
+    const analyzed = sources.slice(0, 3).map(s => analyzeSourceContent(s));
+    
+    // Look for findings that introduce complexity, limitations, or contradictions
+    let citedEvidence = false;
+    analyzed.forEach((a, i) => {
+        const s = sources[i];
+        if (a.limitations.length > 0 || a.findings.length > 0) {
+            arg += `Research complication ${citedEvidence ? '' : '— '}from ${s.title} (${s.authors || s.database}, ${s.year || 'n.d.'}):\n`;
+            if (a.limitations.length > 0) {
+                arg += `Limitation noted: ${a.limitations[0]}\n`;
+            }
+            if (a.numbers.length > 0) {
+                arg += `The actual data: ${a.numbers[0]} — which may be smaller or more qualified than the claim suggests.\n`;
+            }
+            if (a.methodology) {
+                arg += `Methodology: ${a.methodology} — `;
+                arg += pick([
+                    `which introduces specific constraints on how broadly these findings can be generalized.`,
+                    `which means the findings may not transfer to the conditions implied by the original claim.`,
+                    `a design that answers a narrower question than the claim being made here.`
+                ]) + '\n';
+            }
+            arg += '\n';
+            citedEvidence = true;
+        }
+    });
+    
+    if (!citedEvidence) {
+        // Sources exist but don't have clear limitations — use their content to show complexity
+        const s = sources[0];
+        const a = analyzed[0];
+        arg += `The most relevant research (${s.title}, ${s.year || 'n.d.'}) indicates: `;
+        if (a.findings.length > 0) {
+            arg += `"${a.findings[0]}" — `;
+        } else {
+            arg += `"${s.snippet.substring(0, 150)}" — `;
+        }
+        arg += `which, properly interpreted, reveals more complexity and conditionality than the original claim acknowledges.\n\n`;
+    }
+    
+    arg += `The issue isn't that the claim is entirely without support — it's that the evidence supports a more qualified, conditional version than what's being asserted. The gap between "some evidence points this way" and "this is established fact" is precisely where the claim overreaches.`;
     
     return arg;
 }
 
 function senatorRebuttal(advocateArg, userClaim, sources, round) {
     let arg = '';
-    const advLower = advocateArg.toLowerCase();
     
-    const rebuttalOpeners = [
-        `The defense offered here is sophisticated but ultimately unpersuasive:`,
-        `These supporting arguments, while well-constructed, don't address the fundamental problems:`,
-        `The advocate's response reveals the difficulty of the position rather than resolving it:`
-    ];
-    arg += pick(rebuttalOpeners) + '\n\n';
+    // Parse what the Advocate actually cited and claimed
+    const advocateCited = extractCitedSources(advocateArg);
+    const advocateClaims = extractSpecificClaims(advocateArg);
+    const advocateNumbers = extractNumbers(advocateArg);
     
-    // Counter the Advocate's specific strategies
-    if (/meta-analysis|replicated|robust/i.test(advLower)) {
-        arg += `Citing meta-analyses doesn't settle the question — it merely moves the uncertainty up one level. Meta-analyses inherit the biases of their constituent studies. A meta-analysis of flawed studies produces a flawed meta-analysis with higher confidence. Garbage in, garbage out — with better packaging. The question remains whether the underlying methodology is sound.`;
-    } else if (/multiple.*criteria|converging evidence|dose.response/i.test(advLower)) {
-        arg += `"Converging evidence" is persuasive rhetoric but it's not the same as experimental confirmation. Multiple lines of weak evidence can converge on a wrong conclusion if they share common methodological biases or confounders. The history of medicine is full of treatments supported by "converging evidence" that randomized trials later disproved.`;
-    } else if (/moral progress|slavery|women.*suffrage/i.test(advLower)) {
-        arg += `Invoking "moral progress" begs the question. Calling changes "progress" assumes the endpoint we've reached is correct — which is precisely what's being debated. People in 1850 also believed their moral views represented progress over previous generations. Every era believes it has reached the correct moral conclusions. That confidence has a 100% historical failure rate.`;
-    } else if (/clean air|seatbelt|vaccination|succeed/i.test(advLower)) {
-        arg += `Cherry-picking policy successes is the mirror image of cherry-picking failures. For every Clean Air Act, there's a War on Poverty that spent trillions without reducing poverty rates. The question isn't whether any policy has ever worked — it's what the base rate of success is for THIS type of intervention, and whether the specific design features that made other policies succeed are present here.`;
-    } else if (/weather|actuarial|demographic/i.test(advLower)) {
-        arg += `Weather forecasting, actuarial tables, and demographics are simple systems compared to social, economic, or political prediction. Weather models work because physics is regular; actuarial tables work because mortality follows statistical distributions; demographics are slow-moving. None of these validate predictions about complex adaptive systems with human agency and reflexivity. The comparison is misleading.`;
-    } else {
+    arg += `The defense has made specific claims that require specific responses:\n\n`;
+    
+    // Directly address the Advocate's cited evidence
+    if (advocateCited.length > 0) {
+        arg += `Regarding the Advocate's cited source ("${advocateCited[0].substring(0, 80)}..."):\n`;
         arg += pick([
-            `The defense relies on the claim that this position is "better supported than alternatives." But that's a low bar that conceals how uncertain the evidence actually is. Being the best available explanation doesn't make something true — the best available explanation in 1850 for disease was miasma theory. It was the best available AND wrong.`,
-            `The advocate accuses me of generic skepticism, but my objections are specific: the evidence cited doesn't establish what's claimed with the certainty that's being asserted. The gap between "suggestive evidence exists" and "this is established fact" is enormous, and the defense hasn't bridged it.`,
-            `Notice what the defense hasn't done: it hasn't addressed the specific counter-evidence I raised or explained why it shouldn't modify the original claim. Instead, it's reasserted the original position with additional rhetoric. Repetition isn't refutation.`
-        ]);
+            `This study, examined closely, actually supports a more limited conclusion than the Advocate draws from it. The specific findings are real, but the inference from those findings to the original claim involves logical steps that aren't fully justified.`,
+            `The study's findings are not in dispute. What's in dispute is whether they support the broad claim being made. A study showing X in condition Y does not automatically generalize to all conditions — and the original claim implies broader applicability than the evidence warrants.`,
+            `This research addresses a specific population, time period, or set of conditions. Generalizing from its findings to the universal claim being defended requires assumptions about transferability that haven't been demonstrated.`
+        ]) + '\n\n';
     }
     
-    // Cite additional sources in later rounds
-    if (sources.length > round && sources[round].snippet) {
-        const s = sources[round];
-        arg += `\n\nAdditional counter-evidence: ${s.title} (${s.authors || s.database}, ${s.year || 'n.d.'}): "${s.snippet.substring(0, 150)}${s.snippet.length > 150 ? '...' : ''}"`;
+    // Counter specific numbers the Advocate cited
+    if (advocateNumbers.length > 0) {
+        arg += `On the quantitative claims: the Advocate cites "${advocateNumbers[0]}" — but`;
+        arg += pick([
+            ` context matters. A statistic without its confidence interval, effect size relative to other factors, and population parameters is incomplete. The number exists; the question is what it actually demonstrates about the broader claim.`,
+            ` this number needs to be weighed against the base rate. An effect can be statistically significant while being practically trivial — too small to justify the policy or behavioral changes the original claim implies.`,
+            ` the methodology behind this number determines its reliability. Was this from a randomized controlled trial or observational data? Was the sample representative? Were confounders controlled? These details determine how much weight the number should carry.`
+        ]) + '\n\n';
+    }
+    
+    // If Advocate made specific claims, counter them with source analysis
+    if (advocateClaims.length > 0 && sources.length > round - 1) {
+        const counterSource = sources[Math.min(round - 1, sources.length - 1)];
+        const counterAnalysis = analyzeSourceContent(counterSource);
+        
+        arg += `Counter-evidence from ${counterSource.title} (${counterSource.authors || counterSource.database}, ${counterSource.year || 'n.d.'}):\n`;
+        if (counterAnalysis.findings.length > 0) {
+            arg += `Finding: ${counterAnalysis.findings[0]}\n`;
+        }
+        if (counterAnalysis.numbers.length > 0) {
+            arg += `Data: ${counterAnalysis.numbers[0]}\n`;
+        }
+        if (counterAnalysis.limitations.length > 0) {
+            arg += `Acknowledged limitation: ${counterAnalysis.limitations[0]}\n`;
+        }
+        arg += `This research introduces complications that the Advocate's case hasn't addressed.\n\n`;
     }
     
     // Closing in final round
     if (round >= DEBATE_CONFIG.maxRounds) {
-        arg += '\n\n' + pick([
-            `In closing: the original claim has not been established to the standard required. Supporting evidence exists but is insufficient to overcome the methodological, logical, and evidential challenges raised. A more qualified version of the claim — acknowledging its limitations and boundary conditions — would be more defensible than the version presented.`,
-            `To summarize: the defense has presented supporting evidence but has not adequately addressed the counter-evidence and logical objections raised. The original claim may contain a kernel of truth, but it has been overstated relative to what the evidence actually supports.`
-        ]);
+        arg += `In closing: the original claim has not been established to the standard it requires. The supporting evidence, when examined closely, supports a more qualified and conditional version of the position. The specific findings cited by the Advocate are real but insufficient to bear the weight of the broad claim being made. A more modest, properly hedged version would be defensible; the version presented was not.`;
     }
     
     return arg;
+}
+
+// ============================================================
+// SOURCE CONTENT ANALYSIS — Extracts specific findings from publication text
+// ============================================================
+
+function analyzeSourceContent(source) {
+    const text = source.snippet || '';
+    const result = { findings: [], numbers: [], limitations: [], methodology: null, conclusion: null };
+    
+    if (!text || text.length < 20) return result;
+    
+    const sentences = text.split(/[.;]+/).map(s => s.trim()).filter(s => s.length > 20);
+    
+    for (const sentence of sentences) {
+        const lower = sentence.toLowerCase();
+        
+        // Extract numerical findings
+        if (/\d+(\.\d+)?(%|\s*percent|\s*fold|\s*times|\s*mg|\s*kg|\s*years)/.test(sentence)) {
+            result.numbers.push(sentence.substring(0, 150));
+        }
+        
+        // Extract key findings (verbs of discovery)
+        if (/\b(found|showed|demonstrated|revealed|observed|identified|detected|associated|correlated|predicted|increased|decreased|reduced|improved|significant)\b/i.test(lower)) {
+            result.findings.push(sentence.substring(0, 180));
+        }
+        
+        // Extract limitations
+        if (/\b(however|although|limitation|caveat|despite|nevertheless|but|yet|unclear|uncertain|inconsistent|conflicting|varies|heterogen)\b/i.test(lower)) {
+            result.limitations.push(sentence.substring(0, 150));
+        }
+        
+        // Extract methodology
+        if (/\b(randomized|controlled|meta-analysis|systematic review|longitudinal|cross-sectional|cohort|double-blind|sample of|participants|n\s*=\s*\d+|survey of|experiment)\b/i.test(lower) && !result.methodology) {
+            result.methodology = sentence.substring(0, 120);
+        }
+        
+        // Extract conclusions
+        if (/\b(conclud|suggest|imply|indicat|recommend|therefore|thus|overall)\b/i.test(lower) && !result.conclusion) {
+            result.conclusion = sentence.substring(0, 150);
+        }
+    }
+    
+    // Deduplicate — a sentence might appear in both findings and numbers
+    result.findings = [...new Set(result.findings)].slice(0, 3);
+    result.numbers = [...new Set(result.numbers)].slice(0, 3);
+    result.limitations = [...new Set(result.limitations)].slice(0, 2);
+    
+    return result;
+}
+
+// Extract sources that were cited in an argument (by looking for title patterns and quotes)
+function extractCitedSources(text) {
+    const cited = [];
+    // Match quoted text (likely source excerpts)
+    const quoteMatches = text.match(/"[^"]{30,}"/g) || [];
+    cited.push(...quoteMatches.map(q => q.replace(/"/g, '')));
+    // Match parenthetical citations like (Author, Year)
+    const citeMatches = text.match(/\([^)]*\d{4}[^)]*\)/g) || [];
+    cited.push(...citeMatches.map(c => c.replace(/[()]/g, '')));
+    return cited.slice(0, 3);
+}
+
+// Extract specific claims (sentences with assertive language)
+function extractSpecificClaims(text) {
+    const sentences = text.split(/[.!]+/).filter(s => s.trim().length > 40);
+    const claims = [];
+    for (const s of sentences) {
+        if (/\b(found|showed|is|are|demonstrates?|proves?|establishes?|confirms?|support|indicates?|reveals?)\b/i.test(s)) {
+            claims.push(s.trim());
+        }
+    }
+    return claims.slice(0, 4);
+}
+
+// Extract numbers/statistics from text
+function extractNumbers(text) {
+    const matches = text.match(/\d+(\.\d+)?(%|\s*percent|\s*fold|\s*times|\s*million|\s*billion|\s*thousand|\s*citations)/gi) || [];
+    // Also grab sentences containing numbers
+    const numSentences = text.split(/[.!]+/).filter(s => /\d/.test(s) && s.trim().length > 20 && s.trim().length < 150);
+    return [...matches, ...numSentences.map(s => s.trim())].slice(0, 4);
+}
+
+// Generate a direct rebuttal to a specific claim made by the other bot
+function generateDirectRebuttalToCliam(claim, sources, round) {
+    const lower = claim.toLowerCase();
+    
+    // If it's about methodology
+    if (/methodology|replicat|bias|flaw|sample/i.test(lower)) {
+        return pick([
+            `Methodological concerns are valid in the abstract, but they need to be specific to be persuasive. Which aspect of the methodology in the cited studies is flawed? A generic appeal to "possible bias" doesn't override specific, published findings unless you can identify the specific bias at work.`,
+            `The methodological bar being applied here would, if consistent, eliminate virtually all published research. The relevant question isn't "is this study perfect?" — no study is — but "does the weight of evidence, with all its imperfections, point in this direction?" And it does.`
+        ]);
+    }
+    
+    // If it's about scope/generalizability
+    if (/specific|condition|context|limited|narrow|generaliz/i.test(lower)) {
+        return pick([
+            `The claim about limited generalizability cuts both ways. Yes, individual studies have specific conditions. But when multiple studies across different contexts, populations, and methodologies converge on the same finding, that convergence IS the evidence of generalizability.`,
+            `Restricting any finding to its exact study conditions would make all science useless for real-world application. The purpose of research is precisely to identify patterns that extend beyond their immediate context. That's what replication across settings demonstrates.`
+        ]);
+    }
+    
+    // If it cites a specific number being too small/qualified
+    if (/small|trivial|only \d|just \d|modest|marginal/i.test(lower)) {
+        const counterSource = sources.length > 0 ? sources[Math.min(round, sources.length - 1)] : null;
+        let rebuttal = `The characterization of the effect as "small" ignores practical significance. In population-level phenomena, even a 3-5% effect applied across millions of people produces enormous aggregate impact.`;
+        if (counterSource && counterSource.snippet) {
+            const analysis = analyzeSourceContent(counterSource);
+            if (analysis.numbers.length > 0) {
+                rebuttal += ` Moreover, ${counterSource.title} reports: ${analysis.numbers[0]} — which suggests the effect may be larger than the opposition acknowledges.`;
+            }
+        }
+        return rebuttal;
+    }
+    
+    // Default
+    return pick([
+        `This objection doesn't engage with the specific evidence cited — it reframes the question at a higher level of abstraction. The findings are concrete and specific; the rebuttal should be equally concrete.`,
+        `The opposition's point here would be stronger if it cited specific counter-evidence rather than raising abstract concerns. Without a contradicting finding of comparable specificity, the original evidence stands.`
+    ]);
 }
 
 const SENATOR_COUNTERS = {

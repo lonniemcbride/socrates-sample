@@ -484,6 +484,7 @@ function buildDirectCounter(message, sources) {
     return COUNTERS.general();
 }
 
+const COUNTERS = {
     empirical: () => pick([
         `The research picture here is more nuanced than that framing suggests. Publication bias systematically inflates positive findings — studies that fail to confirm hypotheses rarely get published. The Open Science Collaboration's 2015 attempt to replicate 100 psychology studies found only 36% replicated successfully. The replication crisis applies unevenly across fields, but it should temper confidence in any single line of research. The evidence may point in this direction, but it hasn't settled the matter definitively.`,
         `It's worth noting that individual studies are data points, not conclusions. Meta-analyses frequently reveal contradictory findings across the literature — nutritional science, for instance, has reversed its position on eggs, dietary fat, and coffee multiple times over decades as different studies reached different results. Effect sizes are often smaller than headlines suggest, and confounding variables regularly go uncontrolled. The honest summary of most research areas is "it's complicated."`,

@@ -13,7 +13,7 @@
 <body>
     <div class="arena">
         <header class="arena-header">
-            <a href="index.html" class="back-link">← Senator</a>
+            <a href="index.html" class="back-link">&larr; Senator</a>
             <h1>Debate Arena</h1>
             <div class="round-indicator">
                 <span id="roundLabel">Enter a claim to begin</span>
@@ -21,45 +21,43 @@
         </header>
 
         <div class="arena-body">
-            <!-- Left: Advocate (defends user) -->
-            <div class="debater advocate-panel">
-                <div class="debater-header">
-                    <div class="debater-logo advocate-logo">A</div>
-                    <div>
-                        <h2>Advocate</h2>
-                        <p>Defends your position</p>
+            <!-- Left: Debate columns -->
+            <div class="debate-columns">
+                <div class="debater advocate-panel">
+                    <div class="debater-header">
+                        <div class="debater-logo advocate-logo">A</div>
+                        <div>
+                            <h2>Advocate</h2>
+                            <p>Defends your position</p>
+                        </div>
                     </div>
+                    <div class="debater-feed" id="advocateFeed"></div>
                 </div>
-                <div class="debater-feed" id="advocateFeed"></div>
+
+                <div class="debater senator-panel">
+                    <div class="debater-header">
+                        <div class="debater-logo senator-logo">S</div>
+                        <div>
+                            <h2>Senator</h2>
+                            <p>Argues against your position</p>
+                        </div>
+                    </div>
+                    <div class="debater-feed" id="senatorFeed"></div>
+                </div>
             </div>
 
-            <!-- Right: Senator (opposes user) -->
-            <div class="debater senator-panel">
-                <div class="debater-header">
-                    <div class="debater-logo senator-logo">S</div>
-                    <div>
-                        <h2>Senator</h2>
-                        <p>Argues against your position</p>
+            <!-- Right: Summary panel (always visible once debate starts) -->
+            <aside class="summary-panel" id="summaryPanel">
+                <div class="summary-header">
+                    <h2>Fact Check</h2>
+                    <span class="summary-status" id="summaryStatus">Waiting for debate...</span>
+                </div>
+                <div class="summary-content" id="summaryContent">
+                    <div class="summary-empty">
+                        <p>Claims will be analyzed here as the debate progresses.</p>
                     </div>
                 </div>
-                <div class="debater-feed" id="senatorFeed"></div>
-            </div>
-        </div>
-
-        <!-- Summary panel (hidden until debate ends) -->
-        <div class="summary-panel" id="summaryPanel" style="display:none;">
-            <h2>Debate Summary</h2>
-            <div class="summary-columns">
-                <div class="summary-col validated">
-                    <h3>Validated Claims</h3>
-                    <ul id="validatedList"></ul>
-                </div>
-                <div class="summary-col disproved">
-                    <h3>Challenged Claims</h3>
-                    <ul id="disprovedList"></ul>
-                </div>
-            </div>
-            <div class="summary-verdict" id="summaryVerdict"></div>
+            </aside>
         </div>
 
         <!-- Input area -->
@@ -74,7 +72,7 @@
             </form>
             <div class="debate-controls" id="debateControls" style="display:none;">
                 <span class="debate-status" id="debateStatus">Debate in progress...</span>
-                <button id="stopDebateBtn" class="stop-btn">End Debate Early</button>
+                <button id="stopDebateBtn" class="stop-btn">End Debate</button>
             </div>
         </footer>
     </div>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socratic Dialogue</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-icon">&#x1F3DB;</div>
+            <h1>Socratic Dialogue</h1>
+            <p class="subtitle">I won't give you answers — I'll help you find them yourself.</p>
+        </header>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="message socrates">
+                <div class="message-avatar">&#x1F3DB;</div>
+                <div class="message-content">
+                    <p>Welcome, seeker of wisdom. I am here not to tell you what to think, but to help you discover what you already know. Share a thought, a belief, or a question — and together we shall examine it.</p>
+                </div>
+            </div>
+        </div>
+
+        <form class="input-area" id="inputForm">
+            <textarea 
+                id="userInput" 
+                placeholder="Share a thought, belief, or question..." 
+                rows="1"
+                autofocus
+            ></textarea>
+            <button type="submit" id="sendBtn" title="Send">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"/>
+                </svg>
+            </button>
+        </form>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

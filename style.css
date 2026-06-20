@@ -253,3 +253,41 @@ html, body {
         font-size: 1.3rem;
     }
 }
+
+
+
+/* Source links */
+.message-content a {
+    color: #e94560;
+    text-decoration: underline;
+    font-size: 0.85rem;
+    transition: color 0.2s;
+}
+
+.message-content a:hover {
+    color: #ff6b81;
+}
+
+/* Searching status text */
+.typing-indicator + p {
+    font-size: 0.8rem;
+    color: #a0a0b0;
+    font-style: italic;
+    margin-top: 0.4rem;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+/* Concession styling */
+.message.socrates .message-content p:first-child {
+    font-weight: normal;
+}
+
+/* Quote styling for source excerpts */
+.message-content p {
+    word-wrap: break-word;
+}

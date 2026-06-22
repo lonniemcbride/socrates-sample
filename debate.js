@@ -1,11 +1,11 @@
 // Senator - Debate Arena
-// Advocate + Senator bots with evidence-based argumentation
+// Council + Senator bots with evidence-based argumentation
 
 (function () {
   'use strict';
 
   // DOM Elements
-  var advocateFeed = document.getElementById('advocateFeed');
+  var councilFeed = document.getElementById('councilFeed');
   var senatorFeed = document.getElementById('senatorFeed');
   var summaryPanel = document.getElementById('summaryPanel');
   var summaryStatus = document.getElementById('summaryStatus');
@@ -31,7 +31,7 @@
     evidenceLog.push({
       round: currentRound,
       timestamp: Date.now(),
-      side: entry.side, // 'advocate' or 'senator'
+      side: entry.side, // 'council' or 'senator'
       claim: entry.claim,
       source: entry.source,
       sourceTitle: entry.sourceTitle,
@@ -123,15 +123,15 @@
       });
       analysis.limitations = limitSentence ? limitSentence.trim() : '';
     } else {
-      analysis.findings = source.title;
-      analysis.numbers = source.citations > 0 ? 'Cited ' + source.citations + ' times (' + source.year + ')' : 'Published ' + source.year;
+      analysis.findings = '';
+      analysis.numbers = source.citations > 0 ? 'Cited ' + source.citations + ' times (' + source.year + ')' : '';
     }
 
     return analysis;
   }
 
-  // Advocate bot - argues FOR the claim
-  async function advocateRound(claim, round, previousCounter) {
+  // Council bot - argues FOR the claim
+  async function councilRound(claim, round, previousCounter) {
     var searchQuery = '';
     if (round === 1) {
       searchQuery = claim + ' evidence support';
@@ -151,12 +151,12 @@
     var analysis = topSource ? analyzeSource(topSource) : null;
 
     var argument = '';
-    if (analysis && analysis.findings) {
+    if (analysis && analysis.findings && analysis.findings.length > 20) {
       if (round === 1) {
-        argument = "The evidence supports this claim. " + analysis.title + " (" + (topSource.year) + ") " +
+        argument = "The evidence supports this claim. " + topSource.title + " (" + (topSource.year) + ") " +
           "found that " + analysis.findings + ".";
       } else {
-        argument = "Building on the evidence: " + analysis.title + " (" + (topSource.year) + ") " +
+        argument = "Building on the evidence: " + topSource.title + " (" + (topSource.year) + ") " +
           "demonstrates that " + analysis.findings + ".";
       }
       if (analysis.numbers) {
@@ -165,7 +165,7 @@
 
       // Log evidence
       logEvidence({
-        side: 'advocate',
+        side: 'council',
         claim: claim,
         source: topSource.source,
         sourceTitle: topSource.title,
@@ -173,19 +173,34 @@
         data: analysis.numbers,
         limitations: analysis.limitations
       });
-    } else {
+    } else if (topSource) {
+      // Source exists but has no abstract — only cite what we can verify
       argument = round === 1
-        ? "This claim is well-supported by general consensus and practical observation. The underlying principle aligns with established understanding in this domain."
-        : "The weight of practical experience continues to support this position. Real-world outcomes demonstrate its validity across multiple contexts.";
+        ? "Research relevant to this claim includes " + topSource.title + " (" + topSource.year + ", " + topSource.authors + "). " + (analysis.numbers ? "This paper has been " + analysis.numbers.toLowerCase() + ", indicating its relevance to the field." : "The existence of peer-reviewed work in this area supports the claim's plausibility.")
+        : "Additional relevant research: " + topSource.title + " (" + topSource.year + "). " + (analysis.numbers ? analysis.numbers + "." : "");
 
       logEvidence({
-        side: 'advocate',
+        side: 'council',
+        claim: claim,
+        source: topSource.source,
+        sourceTitle: topSource.title,
+        findings: 'Relevant publication identified (abstract not available)',
+        data: analysis.numbers || '',
+        limitations: 'Full text not accessible for detailed finding extraction'
+      });
+    } else {
+      argument = round === 1
+        ? "While I'm searching for specific studies, this position aligns with established understanding in the field. The claim is consistent with observed patterns and professional consensus."
+        : "The general weight of evidence continues to favor this position, though I was unable to locate additional specific studies for this round.";
+
+      logEvidence({
+        side: 'council',
         claim: claim,
         source: 'General knowledge',
-        sourceTitle: 'Consensus view',
+        sourceTitle: 'No specific source available',
         findings: argument,
         data: '',
-        limitations: 'No specific academic source found for this round'
+        limitations: 'No academic source with accessible abstract found for this round'
       });
     }
 
@@ -217,12 +232,12 @@
     var analysis = topSource ? analyzeSource(topSource) : null;
 
     var argument = '';
-    if (analysis && analysis.findings) {
+    if (analysis && analysis.findings && analysis.findings.length > 20) {
       if (round === 1) {
-        argument = "However, research presents a more nuanced picture. " + analysis.title + " (" + (topSource.year) + ") " +
+        argument = "However, research presents a more nuanced picture. " + topSource.title + " (" + (topSource.year) + ") " +
           "found that " + analysis.findings + ".";
       } else {
-        argument = "The counter-evidence strengthens: " + analysis.title + " (" + (topSource.year) + ") " +
+        argument = "The counter-evidence strengthens: " + topSource.title + " (" + (topSource.year) + ") " +
           "shows that " + analysis.findings + ".";
       }
       if (analysis.numbers) {
@@ -241,6 +256,21 @@
         findings: analysis.findings,
         data: analysis.numbers,
         limitations: analysis.limitations
+      });
+    } else if (topSource) {
+      // Source exists but has no readable abstract
+      argument = round === 1
+        ? "Research in this area warrants caution. " + topSource.title + " (" + topSource.year + ") is relevant to this discussion. " + (analysis && analysis.numbers ? analysis.numbers + "." : "Without access to full findings, the claim's certainty should be tempered.")
+        : "Additional research exists: " + topSource.title + " (" + topSource.year + "). The breadth of literature on this topic suggests the picture is more complex than a single claim captures.";
+
+      logEvidence({
+        side: 'senator',
+        claim: claim,
+        source: topSource.source,
+        sourceTitle: topSource.title,
+        findings: 'Relevant publication identified (abstract not available)',
+        data: analysis ? analysis.numbers || '' : '',
+        limitations: 'Full text not accessible for detailed analysis'
       });
     } else {
       argument = round === 1
@@ -293,7 +323,7 @@
     summaryStatus.textContent = 'Analyzing...';
     summaryContent.innerHTML = '';
 
-    var advocateEvidence = evidenceLog.filter(function (e) { return e.side === 'advocate'; });
+    var councilEvidence = evidenceLog.filter(function (e) { return e.side === 'council'; });
     var senatorEvidence = evidenceLog.filter(function (e) { return e.side === 'senator'; });
 
     // Cross-reference claims
@@ -301,7 +331,7 @@
 
     // Round-by-round analysis
     for (var r = 1; r <= currentRound; r++) {
-      var advRound = advocateEvidence.filter(function (e) { return e.round === r; });
+      var advRound = councilEvidence.filter(function (e) { return e.round === r; });
       var senRound = senatorEvidence.filter(function (e) { return e.round === r; });
 
       if (advRound.length > 0 || senRound.length > 0) {
@@ -311,7 +341,7 @@
         if (advRound.length > 0) {
           var adv = advRound[0];
           html += '<div style="margin-bottom:8px;">';
-          html += '<strong style="color:#10b981;">Advocate:</strong> ';
+          html += '<strong style="color:#10b981;">Council:</strong> ';
           html += '<span>' + adv.findings.substring(0, 150) + '</span>';
           if (adv.data) {
             html += '<br><em style="font-size:11px;color:#a1a1aa;">Data: ' + adv.data + '</em>';
@@ -349,7 +379,7 @@
       html += '<div class="summary-card">';
       html += '<h3>Verdict</h3>';
 
-      var advWithSources = advocateEvidence.filter(function (e) { return e.sourceTitle !== 'Consensus view'; });
+      var advWithSources = councilEvidence.filter(function (e) { return e.sourceTitle !== 'Consensus view'; });
       var senWithSources = senatorEvidence.filter(function (e) { return e.sourceTitle !== 'Methodological critique'; });
 
       var advStrength = advWithSources.length;
@@ -357,7 +387,7 @@
 
       var verdict = '';
       if (advStrength > senStrength + 1) {
-        verdict = 'The evidence leans toward supporting the original claim. The advocate presented stronger sourced arguments across more rounds.';
+        verdict = 'The evidence leans toward supporting the original claim. The council presented stronger sourced arguments across more rounds.';
       } else if (senStrength > advStrength + 1) {
         verdict = 'The counter-evidence is compelling. The senator raised well-sourced objections that challenge the original claim significantly.';
       } else {
@@ -366,7 +396,7 @@
 
       html += '<div class="verdict">' + verdict + '</div>';
       html += '<div style="margin-top:8px;font-size:12px;color:#71717a;">';
-      html += 'Advocate sources cited: ' + advStrength + ' | Senator sources cited: ' + senStrength;
+      html += 'Council sources cited: ' + advStrength + ' | Senator sources cited: ' + senStrength;
       html += '</div>';
       html += '</div>';
 
@@ -385,7 +415,7 @@
     shouldStop = false;
     evidenceLog = [];
     currentRound = 0;
-    advocateFeed.innerHTML = '';
+    councilFeed.innerHTML = '';
     senatorFeed.innerHTML = '';
     summaryContent.innerHTML = '';
 
@@ -402,12 +432,12 @@
 
       currentRound = round;
       roundNumber.textContent = String(round);
-      debateStatus.textContent = 'Round ' + round + ' — Advocate researching...';
+      debateStatus.textContent = 'Round ' + round + ' — Council researching...';
 
-      // Advocate turn
-      var advResult = await advocateRound(claim, round, lastSenArgument);
+      // Council turn
+      var advResult = await councilRound(claim, round, lastSenArgument);
       if (shouldStop) break;
-      renderClaimCard(advocateFeed, 'advocate', round, advResult.text, advResult.sourceData);
+      renderClaimCard(councilFeed, 'council', round, advResult.text, advResult.sourceData);
       lastAdvArgument = advResult.text;
 
       // Small delay for readability

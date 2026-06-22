@@ -15,9 +15,9 @@
   --border-subtle: rgba(139, 92, 246, 0.15);
   --accent: #8b5cf6;
   --accent-light: #a78bfa;
-  --advocate-color: #10b981;
-  --advocate-dim: rgba(16, 185, 129, 0.1);
-  --advocate-border: rgba(16, 185, 129, 0.3);
+  --council-color: #10b981;
+  --council-dim: rgba(16, 185, 129, 0.1);
+  --council-border: rgba(16, 185, 129, 0.3);
   --senator-color: #f59e0b;
   --senator-dim: rgba(245, 158, 11, 0.1);
   --senator-border: rgba(245, 158, 11, 0.3);
@@ -110,7 +110,7 @@ body {
 }
 
 /* Panels */
-.advocate-panel,
+.council-panel,
 .senator-panel,
 .summary-panel {
   display: flex;
@@ -141,13 +141,13 @@ body {
   font-size: 16px;
 }
 
-.advocate-header {
-  background: var(--advocate-dim);
-  border-bottom-color: var(--advocate-border);
+.council-header {
+  background: var(--council-dim);
+  border-bottom-color: var(--council-border);
 }
 
-.advocate-header h2 {
-  color: var(--advocate-color);
+.council-header h2 {
+  color: var(--council-color);
 }
 
 .senator-header {
@@ -210,8 +210,8 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.claim-card.advocate {
-  border-left: 3px solid var(--advocate-color);
+.claim-card.council {
+  border-left: 3px solid var(--council-color);
 }
 
 .claim-card.senator {
@@ -387,7 +387,7 @@ body {
     grid-template-rows: 1fr 1fr;
   }
 
-  .advocate-panel {
+  .council-panel {
     border-bottom: 1px solid var(--border-subtle);
     border-right: none;
   }

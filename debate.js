@@ -40,36 +40,24 @@
     });
   }
 
-  // CORS proxy — fallback if direct API calls are blocked
+  // CORS proxy — Semantic Scholar needs it but often gets rate-limited
+  // So we rely primarily on OpenAlex which works directly
   var CORS_PROXY = 'https://api.allorigins.win/raw?url=';
-  var USE_PROXY = false;
 
   // --- Source Search ---
   // OpenAlex is PRIMARY — it supports CORS natively from browsers
-  // Semantic Scholar does NOT support CORS — always use proxy for it
+  // Semantic Scholar is REMOVED — consistently blocked by CORS and rate limits
 
-  async function searchSemanticScholar(query) {
-    try {
-      var apiUrl = 'https://api.semanticscholar.org/graph/v1/paper/search?query=' +
-        encodeURIComponent(query.substring(0, 200)) +
-        '&limit=5&fields=title,abstract,year,authors,citationCount,url';
-      // Semantic Scholar blocks CORS — must always use proxy
-      var resp = await fetch(CORS_PROXY + encodeURIComponent(apiUrl));
-      if (!resp.ok) return [];
-      var data = await resp.json();
-      if (!data.data) return [];
-      return data.data.map(function (p) {
-        return {
-          title: p.title || '',
-          abstract: p.abstract || '',
-          year: p.year || null,
-          authors: p.authors ? p.authors.map(function (a) { return a.name; }).join(', ') : '',
-          citations: p.citationCount || 0,
-          url: p.url || ''
-        };
-      });
-    } catch (e) { return []; }
+  // Extract useful search terms from a claim (not the whole sentence)
+  function extractSearchTerms(text) {
+    var stops = new Set(['the','a','an','is','are','was','were','be','been','being','have','has','had','do','does','did','will','would','could','should','may','might','shall','can','need','to','of','in','for','on','with','at','by','from','as','into','through','during','before','after','between','out','off','over','under','that','this','these','those','it','its','and','but','or','nor','not','also','just','than','very','too','more','most','only','about','really','actually','basically','they','them','their','we','our','you','your','he','him','his','she','her','i','my','me','if','so','no','yes']);
+    var words = text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(function(w) {
+      return w.length > 3 && !stops.has(w);
+    });
+    // Take the most meaningful words (max 4-5 for a focused search)
+    return words.slice(0, 5).join(' ');
   }
+
 
   async function searchOpenAlex(query) {
     try {
@@ -116,10 +104,11 @@
     } catch (e) {}
     
     // Try Semantic Scholar via proxy (may fail due to rate limits)
-    try {
-      var ssResults = await searchSemanticScholar(query);
-      all = all.concat(ssResults);
-    } catch (e) {}
+    // DISABLED — Semantic Scholar blocks CORS and proxies get rate-limited
+    // try {
+    //   var ssResults = await searchSemanticScholar(query);
+    //   all = all.concat(ssResults);
+    // } catch (e) {}
     
     // Only keep sources that have actual abstracts
     all = all.filter(function (s) { return s.abstract && s.abstract.length > 50; });
@@ -177,18 +166,18 @@
 
   // --- Council Bot (argues FOR the claim) ---
   async function councilRound(claim, round, previousSenatorArg) {
-    // Search with different queries each round for variety
+    // Search with focused keywords (not full claim text)
+    var baseTerms = extractSearchTerms(claim);
     var queries = [
-      claim + ' evidence support',
-      claim + ' positive outcomes benefits',
-      claim + ' confirmed demonstrated',
-      claim + ' meta-analysis systematic review support',
-      claim + ' longitudinal evidence'
+      baseTerms,
+      baseTerms + ' evidence',
+      baseTerms + ' outcomes',
+      baseTerms + ' review',
+      baseTerms + ' study'
     ];
     var query = queries[round % queries.length] || queries[0];
     if (round > 1 && previousSenatorArg) {
-      // Address what Senator specifically cited
-      query = claim + ' ' + extractKeyTerms(previousSenatorArg);
+      query = extractSearchTerms(previousSenatorArg);
     }
 
     var sources = await searchSources(query);
@@ -259,16 +248,17 @@
 
   // --- Senator Bot (argues AGAINST the claim) ---
   async function senatorRound(claim, round, previousCouncilArg) {
+    var baseTerms = extractSearchTerms(claim);
     var queries = [
-      claim + ' criticism limitations problems',
-      claim + ' negative outcomes risks',
-      claim + ' contradicts disproven',
-      claim + ' replication failure inconsistent',
-      claim + ' confounding variables bias'
+      baseTerms + ' criticism',
+      baseTerms + ' limitations',
+      baseTerms + ' contradicts',
+      baseTerms + ' negative',
+      baseTerms + ' problems'
     ];
     var query = queries[round % queries.length] || queries[0];
     if (round > 1 && previousCouncilArg) {
-      query = claim + ' counter ' + extractKeyTerms(previousCouncilArg);
+      query = extractSearchTerms(previousCouncilArg) + ' limitations';
     }
 
     var sources = await searchSources(query);

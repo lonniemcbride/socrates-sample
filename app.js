@@ -45,13 +45,16 @@
     return matches ? matches[0] : null;
   }
 
+  // CORS proxy for cross-origin API requests from GitHub Pages
+  var CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+
   // Search Semantic Scholar
   async function searchSemanticScholar(query) {
     try {
       var encodedQuery = encodeURIComponent(query);
-      var url = 'https://api.semanticscholar.org/graph/v1/paper/search?query=' +
+      var apiUrl = 'https://api.semanticscholar.org/graph/v1/paper/search?query=' +
         encodedQuery + '&limit=5&fields=title,abstract,year,authors,citationCount,url';
-      var response = await fetch(url);
+      var response = await fetch(CORS_PROXY + encodeURIComponent(apiUrl));
       if (!response.ok) return [];
       var data = await response.json();
       if (!data.data) return [];
@@ -76,9 +79,9 @@
   async function searchOpenAlex(query) {
     try {
       var encodedQuery = encodeURIComponent(query);
-      var url = 'https://api.openalex.org/works?search=' + encodedQuery +
+      var apiUrl = 'https://api.openalex.org/works?search=' + encodedQuery +
         '&per_page=5&select=id,title,publication_year,authorships,cited_by_count,doi';
-      var response = await fetch(url);
+      var response = await fetch(CORS_PROXY + encodeURIComponent(apiUrl));
       if (!response.ok) return [];
       var data = await response.json();
       if (!data.results) return [];

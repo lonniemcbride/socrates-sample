@@ -40,8 +40,9 @@
     });
   }
 
-  // CORS proxy for cross-origin API requests from GitHub Pages
-  var CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+  // CORS proxy — only used as fallback if direct calls fail
+  var CORS_PROXY = 'https://corsproxy.io/?url=';
+  var USE_PROXY = false; // Try direct first, APIs should support CORS
 
   // --- Source Search ---
   async function searchSemanticScholar(query) {
@@ -49,7 +50,8 @@
       var apiUrl = 'https://api.semanticscholar.org/graph/v1/paper/search?query=' +
         encodeURIComponent(query.substring(0, 200)) +
         '&limit=5&fields=title,abstract,year,authors,citationCount,url';
-      var resp = await fetch(CORS_PROXY + encodeURIComponent(apiUrl));
+      var fetchUrl = USE_PROXY ? CORS_PROXY + encodeURIComponent(apiUrl) : apiUrl;
+      var resp = await fetch(fetchUrl);
       if (!resp.ok) return [];
       var data = await resp.json();
       if (!data.data) return [];
@@ -63,7 +65,21 @@
           url: p.url || ''
         };
       });
-    } catch (e) { return []; }
+    } catch (e) {
+      // If direct call failed, retry with CORS proxy
+      if (!USE_PROXY) {
+        try {
+          var proxyResp = await fetch(CORS_PROXY + encodeURIComponent(apiUrl));
+          if (!proxyResp.ok) return [];
+          var proxyData = await proxyResp.json();
+          if (!proxyData.data) return [];
+          return proxyData.data.map(function (p) {
+            return { title: p.title || '', abstract: p.abstract || '', year: p.year || null, authors: p.authors ? p.authors.map(function (a) { return a.name; }).join(', ') : '', citations: p.citationCount || 0, url: p.url || '' };
+          });
+        } catch (e2) { return []; }
+      }
+      return [];
+    }
   }
 
   async function searchOpenAlex(query) {
@@ -71,7 +87,8 @@
       var apiUrl = 'https://api.openalex.org/works?search=' +
         encodeURIComponent(query.substring(0, 200)) +
         '&per_page=5&select=id,title,abstract_inverted_index,publication_year,authorships,cited_by_count,doi';
-      var resp = await fetch(CORS_PROXY + encodeURIComponent(apiUrl));
+      var fetchUrl = USE_PROXY ? CORS_PROXY + encodeURIComponent(apiUrl) : apiUrl;
+      var resp = await fetch(fetchUrl);
       if (!resp.ok) return [];
       var data = await resp.json();
       if (!data.results) return [];
@@ -96,7 +113,28 @@
           url: w.doi ? 'https://doi.org/' + w.doi.replace('https://doi.org/', '') : (w.id || '')
         };
       });
-    } catch (e) { return []; }
+    } catch (e) {
+      // Retry with proxy
+      if (!USE_PROXY) {
+        try {
+          var proxyResp = await fetch(CORS_PROXY + encodeURIComponent(apiUrl));
+          if (!proxyResp.ok) return [];
+          var proxyData = await proxyResp.json();
+          if (!proxyData.results) return [];
+          return proxyData.results.map(function (w) {
+            var abstract = '';
+            if (w.abstract_inverted_index) {
+              var words = [];
+              Object.entries(w.abstract_inverted_index).forEach(function (entry) { entry[1].forEach(function (pos) { words[pos] = entry[0]; }); });
+              abstract = words.join(' ');
+            }
+            var authors = w.authorships ? w.authorships.slice(0, 3).map(function (a) { return a.author ? a.author.display_name : ''; }).filter(Boolean).join(', ') : '';
+            return { title: w.title || '', abstract: abstract, year: w.publication_year || null, authors: authors, citations: w.cited_by_count || 0, url: w.doi ? 'https://doi.org/' + w.doi.replace('https://doi.org/', '') : (w.id || '') };
+          });
+        } catch (e2) { return []; }
+      }
+      return [];
+    }
   }
 
   async function searchSources(query) {

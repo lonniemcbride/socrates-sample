@@ -40,18 +40,21 @@
     });
   }
 
-  // CORS proxy — only used as fallback if direct calls fail
-  var CORS_PROXY = 'https://corsproxy.io/?url=';
-  var USE_PROXY = false; // Try direct first, APIs should support CORS
+  // CORS proxy — fallback if direct API calls are blocked
+  var CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+  var USE_PROXY = false;
 
   // --- Source Search ---
+  // OpenAlex is PRIMARY — it supports CORS natively from browsers
+  // Semantic Scholar does NOT support CORS — always use proxy for it
+
   async function searchSemanticScholar(query) {
     try {
       var apiUrl = 'https://api.semanticscholar.org/graph/v1/paper/search?query=' +
         encodeURIComponent(query.substring(0, 200)) +
         '&limit=5&fields=title,abstract,year,authors,citationCount,url';
-      var fetchUrl = USE_PROXY ? CORS_PROXY + encodeURIComponent(apiUrl) : apiUrl;
-      var resp = await fetch(fetchUrl);
+      // Semantic Scholar blocks CORS — must always use proxy
+      var resp = await fetch(CORS_PROXY + encodeURIComponent(apiUrl));
       if (!resp.ok) return [];
       var data = await resp.json();
       if (!data.data) return [];
@@ -65,30 +68,16 @@
           url: p.url || ''
         };
       });
-    } catch (e) {
-      // If direct call failed, retry with CORS proxy
-      if (!USE_PROXY) {
-        try {
-          var proxyResp = await fetch(CORS_PROXY + encodeURIComponent(apiUrl));
-          if (!proxyResp.ok) return [];
-          var proxyData = await proxyResp.json();
-          if (!proxyData.data) return [];
-          return proxyData.data.map(function (p) {
-            return { title: p.title || '', abstract: p.abstract || '', year: p.year || null, authors: p.authors ? p.authors.map(function (a) { return a.name; }).join(', ') : '', citations: p.citationCount || 0, url: p.url || '' };
-          });
-        } catch (e2) { return []; }
-      }
-      return [];
-    }
+    } catch (e) { return []; }
   }
 
   async function searchOpenAlex(query) {
     try {
+      // OpenAlex supports CORS natively — call directly (no proxy needed)
       var apiUrl = 'https://api.openalex.org/works?search=' +
         encodeURIComponent(query.substring(0, 200)) +
-        '&per_page=5&select=id,title,abstract_inverted_index,publication_year,authorships,cited_by_count,doi';
-      var fetchUrl = USE_PROXY ? CORS_PROXY + encodeURIComponent(apiUrl) : apiUrl;
-      var resp = await fetch(fetchUrl);
+        '&per_page=5&select=id,title,abstract_inverted_index,publication_year,authorships,cited_by_count,doi&mailto=senator-app@example.com';
+      var resp = await fetch(apiUrl);
       if (!resp.ok) return [];
       var data = await resp.json();
       if (!data.results) return [];
@@ -113,39 +102,25 @@
           url: w.doi ? 'https://doi.org/' + w.doi.replace('https://doi.org/', '') : (w.id || '')
         };
       });
-    } catch (e) {
-      // Retry with proxy
-      if (!USE_PROXY) {
-        try {
-          var proxyResp = await fetch(CORS_PROXY + encodeURIComponent(apiUrl));
-          if (!proxyResp.ok) return [];
-          var proxyData = await proxyResp.json();
-          if (!proxyData.results) return [];
-          return proxyData.results.map(function (w) {
-            var abstract = '';
-            if (w.abstract_inverted_index) {
-              var words = [];
-              Object.entries(w.abstract_inverted_index).forEach(function (entry) { entry[1].forEach(function (pos) { words[pos] = entry[0]; }); });
-              abstract = words.join(' ');
-            }
-            var authors = w.authorships ? w.authorships.slice(0, 3).map(function (a) { return a.author ? a.author.display_name : ''; }).filter(Boolean).join(', ') : '';
-            return { title: w.title || '', abstract: abstract, year: w.publication_year || null, authors: authors, citations: w.cited_by_count || 0, url: w.doi ? 'https://doi.org/' + w.doi.replace('https://doi.org/', '') : (w.id || '') };
-          });
-        } catch (e2) { return []; }
-      }
-      return [];
-    }
+    } catch (e) { return []; }
   }
 
   async function searchSources(query) {
-    var results = await Promise.allSettled([
-      searchSemanticScholar(query),
-      searchOpenAlex(query)
-    ]);
+    // OpenAlex is primary (supports CORS), Semantic Scholar is secondary (needs proxy)
     var all = [];
-    results.forEach(function (r) {
-      if (r.status === 'fulfilled') all = all.concat(r.value);
-    });
+    
+    // Always try OpenAlex first — it works reliably from browsers
+    try {
+      var oaResults = await searchOpenAlex(query);
+      all = all.concat(oaResults);
+    } catch (e) {}
+    
+    // Try Semantic Scholar via proxy (may fail due to rate limits)
+    try {
+      var ssResults = await searchSemanticScholar(query);
+      all = all.concat(ssResults);
+    } catch (e) {}
+    
     // Only keep sources that have actual abstracts
     all = all.filter(function (s) { return s.abstract && s.abstract.length > 50; });
     all.sort(function (a, b) { return b.citations - a.citations; });

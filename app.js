@@ -45,20 +45,16 @@
     return matches ? matches[0] : null;
   }
 
-  // CORS proxy — fallback if direct API calls are blocked
-  var CORS_PROXY = 'https://corsproxy.io/?url=';
+  // CORS proxy — Semantic Scholar needs it, OpenAlex does not
+  var CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
-  // Search Semantic Scholar
+  // Search Semantic Scholar (always via proxy — blocks CORS)
   async function searchSemanticScholar(query) {
     try {
       var encodedQuery = encodeURIComponent(query);
       var apiUrl = 'https://api.semanticscholar.org/graph/v1/paper/search?query=' +
         encodedQuery + '&limit=5&fields=title,abstract,year,authors,citationCount,url';
-      var response = await fetch(apiUrl);
-      if (!response.ok) {
-        // Retry with proxy
-        response = await fetch(CORS_PROXY + encodeURIComponent(apiUrl));
-      }
+      var response = await fetch(CORS_PROXY + encodeURIComponent(apiUrl));
       if (!response.ok) return [];
       var data = await response.json();
       if (!data.data) return [];
@@ -79,16 +75,13 @@
     }
   }
 
-  // Search OpenAlex
+  // Search OpenAlex (direct — supports CORS natively)
   async function searchOpenAlex(query) {
     try {
       var encodedQuery = encodeURIComponent(query);
       var apiUrl = 'https://api.openalex.org/works?search=' + encodedQuery +
-        '&per_page=5&select=id,title,publication_year,authorships,cited_by_count,doi';
+        '&per_page=5&select=id,title,publication_year,authorships,cited_by_count,doi&mailto=senator-app@example.com';
       var response = await fetch(apiUrl);
-      if (!response.ok) {
-        response = await fetch(CORS_PROXY + encodeURIComponent(apiUrl));
-      }
       if (!response.ok) return [];
       var data = await response.json();
       if (!data.results) return [];

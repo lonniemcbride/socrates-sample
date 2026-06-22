@@ -21,7 +21,9 @@
   var shouldStop = false;
   var evidenceLog = [];
   var currentRound = 0;
-  // NO fixed round limit — debate continues until user clicks Stop
+  var citedTitles = new Set(); // Track already-cited papers to prevent repetition
+  var consecutiveEmptyRounds = 0; // Auto-end when both sides run dry
+  // NO fixed round limit — debate continues until sources exhausted or user stops
 
   function logEvidence(entry) {
     evidenceLog.push({
@@ -94,24 +96,20 @@
   }
 
   async function searchSources(query) {
-    // OpenAlex is primary (supports CORS), Semantic Scholar is secondary (needs proxy)
+    // OpenAlex is the only source (supports CORS natively)
     var all = [];
     
-    // Always try OpenAlex first — it works reliably from browsers
     try {
       var oaResults = await searchOpenAlex(query);
       all = all.concat(oaResults);
     } catch (e) {}
     
-    // Try Semantic Scholar via proxy (may fail due to rate limits)
-    // DISABLED — Semantic Scholar blocks CORS and proxies get rate-limited
-    // try {
-    //   var ssResults = await searchSemanticScholar(query);
-    //   all = all.concat(ssResults);
-    // } catch (e) {}
-    
-    // Only keep sources that have actual abstracts
-    all = all.filter(function (s) { return s.abstract && s.abstract.length > 50; });
+    // Only keep sources that have actual abstracts AND haven't been cited before
+    all = all.filter(function (s) {
+      if (!s.abstract || s.abstract.length < 50) return false;
+      if (citedTitles.has(s.title)) return false; // Skip already-cited
+      return true;
+    });
     all.sort(function (a, b) { return b.citations - a.citations; });
     return all;
   }
@@ -191,6 +189,7 @@
     if (usable.length > 0) {
       var src = usable[0];
       var analysis = analyzeSource(src, claim);
+      citedTitles.add(src.title); // Mark as cited
 
       // Build argument FROM the source content — not generic rhetoric
       if (round === 1) {
@@ -228,22 +227,11 @@
         limitations: analysis.limitations,
         fullAbstract: analysis.fullAbstract
       });
+
+      return { text: argument, foundSource: true };
     } else {
-      argument = round === 1
-        ? 'I was unable to locate studies with accessible abstracts that directly support this specific claim in this search round. The claim may still be valid, but I cannot present specific evidence for it at this time.'
-        : 'No additional studies with full abstracts were found this round. The previously cited evidence remains the strongest support for this position.';
-
-      logEvidence({
-        side: 'council',
-        claim: claim,
-        sourceTitle: 'No accessible source found',
-        findings: '',
-        data: '',
-        limitations: 'Search did not return sources with abstracts relevant to this claim'
-      });
+      return { text: '', foundSource: false };
     }
-
-    return { text: argument };
   }
 
   // --- Senator Bot (argues AGAINST the claim) ---
@@ -272,6 +260,7 @@
     if (usable.length > 0) {
       var src = usable[0];
       var analysis = analyzeSource(src, claim);
+      citedTitles.add(src.title); // Mark as cited
 
       if (round === 1) {
         argument = 'Counter-evidence from "' + src.title + '" (' + src.authors + ', ' + src.year + '):\n\n';
@@ -307,22 +296,11 @@
         limitations: analysis.limitations,
         fullAbstract: analysis.fullAbstract
       });
+
+      return { text: argument, foundSource: true };
     } else {
-      argument = round === 1
-        ? 'I was unable to locate studies with accessible abstracts that directly counter this claim in this search round. This does not validate the claim — absence of counter-evidence is not evidence of absence.'
-        : 'No additional counter-studies with full abstracts were found this round. The previously cited counter-evidence remains the strongest challenge to this position.';
-
-      logEvidence({
-        side: 'senator',
-        claim: claim,
-        sourceTitle: 'No accessible source found',
-        findings: '',
-        data: '',
-        limitations: 'Search did not return sources with abstracts to challenge this claim'
-      });
+      return { text: '', foundSource: false };
     }
-
-    return { text: argument };
   }
 
   function extractKeyTerms(text) {
@@ -456,100 +434,8 @@
     shouldStop = false;
     evidenceLog = [];
     currentRound = 0;
-    councilFeed.innerHTML = '';
-    senatorFeed.innerHTML = '';
-    summaryContent.innerHTML = '';
-
-    debateBtn.disabled = true;
-    debateInput.disabled = true;
-    stopDebateBtn.style.display = 'inline-block';
-    summaryStatus.textContent = 'Debate in progress...';
-
-    var lastCouncilArg = '';
-    var lastSenatorArg = '';
-    var round = 0;
-
-    // Unlimited rounds — stops only when user clicks Stop
-    while (!shouldStop) {
-      round++;
-      currentRound = round;
-      if (roundNumber) roundNumber.textContent = String(round);
-      debateStatus.textContent = 'Round ' + round + ' — Council researching...';
-
-      // Council turn
-      var councilResult = await councilRound(claim, round, lastSenatorArg);
-      if (shouldStop) break;
-      renderArgument(councilFeed, 'council', round, councilResult.text);
-      lastCouncilArg = councilResult.text;
-
-      await delay(600);
-      if (shouldStop) break;
-
-      debateStatus.textContent = 'Round ' + round + ' — Senator researching...';
-
-      // Senator turn
-      var senatorResult = await senatorRound(claim, round, lastCouncilArg);
-      if (shouldStop) break;
-      renderArgument(senatorFeed, 'senator', round, senatorResult.text);
-      lastSenatorArg = senatorResult.text;
-
-      // Update summary after each round
-      generateSummary();
-
-      await delay(800);
-    }
-
-    // Final summary with verdict
-    generateSummary();
-
-    // Reset UI
-    isDebating = false;
-    debateBtn.disabled = false;
-    debateInput.disabled = false;
-    stopDebateBtn.style.display = 'none';
-    debateStatus.textContent = 'Debate complete (' + currentRound + ' rounds)';
-    summaryStatus.textContent = 'Complete — ' + currentRound + ' rounds';
-  }
-
-  function delay(ms) {
-    return new Promise(function (resolve) { setTimeout(resolve, ms); });
-  }
-
-  // --- Events ---
-  debateForm.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var claim = debateInput.value.trim();
-    if (claim && !isDebating) {
-      runDebate(claim);
-      debateInput.value = '';
-    }
-  });
-
-  stopDebateBtn.addEventListener('click', function () {
-    shouldStop = true;
-    debateStatus.textContent = 'Stopping after current round...';
-  });
-
-  debateInput.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      debateForm.dispatchEvent(new Event('submit'));
-    }
-  });
-
-  debateInput.addEventListener('input', function () {
-    this.style.height = 'auto';
-    this.style.height = Math.min(this.scrollHeight, 80) + 'px';
-  });
-
-
-
-  // --- Debate Loop (UNLIMITED rounds until user stops) ---
-  async function runDebate(claim) {
-    isDebating = true;
-    shouldStop = false;
-    evidenceLog = [];
-    currentRound = 0;
+    citedTitles.clear();
+    consecutiveEmptyRounds = 0;
     councilFeed.innerHTML = '';
     senatorFeed.innerHTML = '';
     summaryContent.innerHTML = '';
@@ -569,8 +455,15 @@
 
       var councilResult = await councilRound(claim, currentRound, lastSenatorArg);
       if (shouldStop) break;
-      renderArgument(councilFeed, 'council', currentRound, councilResult.text);
-      lastCouncilArg = councilResult.text;
+      
+      if (councilResult.foundSource) {
+        renderArgument(councilFeed, 'council', currentRound, councilResult.text);
+        lastCouncilArg = councilResult.text;
+        consecutiveEmptyRounds = 0;
+      } else {
+        // Council found nothing new
+        consecutiveEmptyRounds++;
+      }
 
       await delay(600);
       if (shouldStop) break;
@@ -579,10 +472,24 @@
 
       var senatorResult = await senatorRound(claim, currentRound, lastCouncilArg);
       if (shouldStop) break;
-      renderArgument(senatorFeed, 'senator', currentRound, senatorResult.text);
-      lastSenatorArg = senatorResult.text;
+      
+      if (senatorResult.foundSource) {
+        renderArgument(senatorFeed, 'senator', currentRound, senatorResult.text);
+        lastSenatorArg = senatorResult.text;
+        consecutiveEmptyRounds = 0;
+      } else {
+        // Senator found nothing new
+        consecutiveEmptyRounds++;
+      }
 
       generateSummary();
+      
+      // AUTO-END: if both bots failed to find new sources this round, stop
+      if (consecutiveEmptyRounds >= 2) {
+        debateStatus.textContent = 'All available sources exhausted. Concluding debate.';
+        break;
+      }
+      
       await delay(800);
     }
 

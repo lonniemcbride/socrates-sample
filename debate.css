@@ -392,3 +392,57 @@ body {
     border-right: none;
   }
 }
+
+
+
+/* Expandable evidence blocks in summary */
+.evidence-block {
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-subtle);
+  transition: background 0.2s;
+}
+.evidence-block:hover { background: rgba(0, 0, 0, 0.5); }
+.evidence-block.council { border-left: 3px solid var(--advocate-color); }
+.evidence-block.senator { border-left: 3px solid var(--senator-color); }
+
+.evidence-preview {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.evidence-details {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.detail-section {
+  margin-bottom: 10px;
+}
+
+.detail-section .detail-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent-light);
+  margin-bottom: 4px;
+}
+
+.detail-section p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  word-wrap: break-word;
+}
+
+.detail-section a {
+  color: var(--accent-light);
+  text-decoration: underline;
+}
+.detail-section a:hover { color: var(--accent); }

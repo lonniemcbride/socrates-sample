@@ -3,39 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Socratic Dialogue</title>
+    <title>Senator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <meta name="theme-color" content="#050507">
 </head>
 <body>
-    <div class="app-container">
-        <header class="app-header">
-            <div class="header-icon">&#x1F3DB;</div>
-            <h1>Socratic Dialogue</h1>
-            <p class="subtitle">I won't give you answers — I'll help you find them yourself.</p>
-        </header>
-
-        <div class="chat-container" id="chatContainer">
-            <div class="message socrates">
-                <div class="message-avatar">&#x1F3DB;</div>
-                <div class="message-content">
-                    <p>Welcome, seeker of wisdom. I am here not to tell you what to think, but to help you discover what you already know. Share a thought, a belief, or a question — and together we shall examine it.</p>
+    <div class="app">
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">S</div>
+                <div class="header-text">
+                    <h1>Senator</h1>
+                    <p>Counter-arguments from primary sources</p>
                 </div>
             </div>
-        </div>
+            <div class="header-status">
+                <span class="dot" id="statusDot"></span>
+                <span class="status-text" id="statusText">Ready</span>
+            </div>
+        </header>
 
-        <form class="input-area" id="inputForm">
-            <textarea 
-                id="userInput" 
-                placeholder="Share a thought, belief, or question..." 
-                rows="1"
-                autofocus
-            ></textarea>
-            <button type="submit" id="sendBtn" title="Send">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"/>
-                </svg>
-            </button>
-        </form>
+        <main class="chat" id="chatContainer">
+            <div class="message senator">
+                <div class="msg-body">
+                    <p>Make a claim about anything and I'll present the strongest counter-argument I can find, backed by peer-reviewed research. You can also share links to articles — I'll read them and explain specifically where I believe they fall short.</p>
+                </div>
+            </div>
+        </main>
+
+        <footer class="input-bar">
+            <div class="arena-link">
+                <a href="debate.html">Open Debate Arena &rarr;</a>
+            </div>
+            <form id="inputForm" class="input-form">
+                <textarea id="userInput" placeholder="State your position..." rows="1" autofocus></textarea>
+                <button type="submit" id="sendBtn" aria-label="Send">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </button>
+            </form>
+        </footer>
     </div>
 
     <script src="app.js"></script>

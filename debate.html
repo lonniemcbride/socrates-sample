@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senator — Debate Arena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="debate.css">
+    <meta name="theme-color" content="#050507">
+</head>
+<body>
+    <div class="arena">
+        <header class="arena-header">
+            <a href="index.html" class="back-link">&larr; Senator</a>
+            <h1>Debate Arena</h1>
+            <div class="round-indicator">
+                <span id="roundLabel">Enter a claim to begin</span>
+            </div>
+        </header>
+
+        <div class="arena-body">
+            <div class="debate-columns">
+                <div class="debater advocate-panel">
+                    <div class="debater-header">
+                        <div class="debater-logo advocate-logo">A</div>
+                        <div>
+                            <h2>Advocate</h2>
+                            <p>Defends your position</p>
+                        </div>
+                    </div>
+                    <div class="debater-feed" id="advocateFeed"></div>
+                </div>
+
+                <div class="debater senator-panel">
+                    <div class="debater-header">
+                        <div class="debater-logo senator-logo">S</div>
+                        <div>
+                            <h2>Senator</h2>
+                            <p>Argues against your position</p>
+                        </div>
+                    </div>
+                    <div class="debater-feed" id="senatorFeed"></div>
+                </div>
+            </div>
+
+            <aside class="summary-panel" id="summaryPanel">
+                <div class="summary-header">
+                    <h2>Fact Check</h2>
+                    <span class="summary-status" id="summaryStatus">Waiting for debate...</span>
+                </div>
+                <div class="summary-content" id="summaryContent">
+                    <div class="summary-empty">
+                        <p>Claims will be analyzed here as the debate progresses.</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <footer class="arena-input">
+            <form id="debateForm" class="debate-form">
+                <textarea id="debateInput" placeholder="State your position — both bots will debate it..." rows="1" autofocus></textarea>
+                <button type="submit" id="debateBtn" aria-label="Start Debate">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </button>
+            </form>
+            <div class="debate-controls" id="debateControls" style="display:none;">
+                <span class="debate-status" id="debateStatus">Debate in progress...</span>
+                <button id="stopDebateBtn" class="stop-btn">End Debate</button>
+            </div>
+        </footer>
+    </div>
+
+    <script src="debate.js"></script>
+</body>
+</html>

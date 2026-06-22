@@ -1,0 +1,394 @@
+/* Senator - Debate Arena Styles */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-primary: #050507;
+  --bg-surface: #0a0a0f;
+  --bg-elevated: #111118;
+  --border-subtle: rgba(139, 92, 246, 0.15);
+  --accent: #8b5cf6;
+  --accent-light: #a78bfa;
+  --advocate-color: #10b981;
+  --advocate-dim: rgba(16, 185, 129, 0.1);
+  --advocate-border: rgba(16, 185, 129, 0.3);
+  --senator-color: #f59e0b;
+  --senator-dim: rgba(245, 158, 11, 0.1);
+  --senator-border: rgba(245, 158, 11, 0.3);
+  --text-primary: #f1f1f4;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.arena-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Header */
+.arena-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+}
+
+.back-link {
+  font-size: 13px;
+  color: var(--accent-light);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.back-link:hover {
+  color: var(--accent);
+}
+
+.arena-title {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.round-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.round-label {
+  color: var(--text-muted);
+}
+
+.round-number {
+  font-weight: 700;
+  color: var(--accent-light);
+  font-family: var(--font-mono);
+}
+
+.round-total {
+  color: var(--text-muted);
+}
+
+/* Arena Body */
+.arena-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  overflow: hidden;
+}
+
+.debate-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+}
+
+/* Panels */
+.advocate-panel,
+.senator-panel,
+.summary-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.summary-panel {
+  border-right: none;
+}
+
+.panel-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.panel-header h2 {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.panel-icon {
+  font-size: 16px;
+}
+
+.advocate-header {
+  background: var(--advocate-dim);
+  border-bottom-color: var(--advocate-border);
+}
+
+.advocate-header h2 {
+  color: var(--advocate-color);
+}
+
+.senator-header {
+  background: var(--senator-dim);
+  border-bottom-color: var(--senator-border);
+}
+
+.senator-header h2 {
+  color: var(--senator-color);
+}
+
+.summary-header {
+  background: rgba(139, 92, 246, 0.05);
+  justify-content: space-between;
+}
+
+.summary-status {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.panel-feed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panel-feed::-webkit-scrollbar {
+  width: 5px;
+}
+
+.panel-feed::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.summary-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+/* Claim Cards */
+.claim-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.claim-card.advocate {
+  border-left: 3px solid var(--advocate-color);
+}
+
+.claim-card.senator {
+  border-left: 3px solid var(--senator-color);
+}
+
+.claim-card .card-round {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.claim-card .card-text {
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.claim-card .card-evidence {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  margin-top: 6px;
+}
+
+.claim-card .card-evidence .evidence-label {
+  font-weight: 600;
+  color: var(--accent-light);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+/* Summary Cards */
+.summary-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.summary-card h3 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--accent-light);
+}
+
+.summary-card .verdict {
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  margin-top: 8px;
+}
+
+/* Footer */
+.arena-footer {
+  padding: 14px 24px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+}
+
+.debate-form {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.debate-form textarea {
+  flex: 1;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--text-primary);
+  resize: none;
+  outline: none;
+  min-height: 40px;
+  max-height: 80px;
+  transition: border-color 0.2s;
+}
+
+.debate-form textarea:focus {
+  border-color: var(--accent);
+}
+
+.debate-form textarea::placeholder {
+  color: var(--text-muted);
+}
+
+#debateBtn {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, var(--accent), #7c3aed);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.2s;
+  white-space: nowrap;
+}
+
+#debateBtn:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+}
+
+#debateBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.debate-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.debate-status {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.stop-btn {
+  padding: 6px 14px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.stop-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .arena-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+
+  .summary-panel {
+    max-height: 200px;
+    border-top: 1px solid var(--border-subtle);
+  }
+}
+
+@media (max-width: 700px) {
+  .debate-columns {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+
+  .advocate-panel {
+    border-bottom: 1px solid var(--border-subtle);
+    border-right: none;
+  }
+}

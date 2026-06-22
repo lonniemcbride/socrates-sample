@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Senator - Debate Arena</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="debate.css">
+</head>
+<body>
+  <div class="arena-container">
+    <header class="arena-header">
+      <a href="index.html" class="back-link">&larr; Back to Senator</a>
+      <h1 class="arena-title">Debate Arena</h1>
+      <div class="round-indicator">
+        <span class="round-label">Round</span>
+        <span id="roundNumber" class="round-number">0</span>
+        <span class="round-total">/ 4</span>
+      </div>
+    </header>
+
+    <div class="arena-body">
+      <div class="debate-columns">
+        <section class="advocate-panel">
+          <div class="panel-header advocate-header">
+            <span class="panel-icon">&#9733;</span>
+            <h2>Advocate</h2>
+          </div>
+          <div id="advocateFeed" class="panel-feed"></div>
+        </section>
+
+        <section class="senator-panel">
+          <div class="panel-header senator-header">
+            <span class="panel-icon">&#9878;</span>
+            <h2>Senator</h2>
+          </div>
+          <div id="senatorFeed" class="panel-feed"></div>
+        </section>
+      </div>
+
+      <aside class="summary-panel">
+        <div class="panel-header summary-header">
+          <h2>Summary</h2>
+          <span id="summaryStatus" class="summary-status">Waiting for debate...</span>
+        </div>
+        <div id="summaryPanel" class="summary-content">
+          <div id="summaryContent"></div>
+        </div>
+      </aside>
+    </div>
+
+    <footer class="arena-footer">
+      <form id="debateForm" class="debate-form">
+        <textarea id="debateInput" placeholder="Enter a claim to debate..." rows="1"></textarea>
+        <button type="submit" id="debateBtn">Start Debate</button>
+      </form>
+      <div id="debateControls" class="debate-controls">
+        <span id="debateStatus" class="debate-status"></span>
+        <button id="stopDebateBtn" class="stop-btn" style="display:none;">Stop Debate</button>
+      </div>
+    </footer>
+  </div>
+
+  <script src="debate.js"></script>
+</body>
+</html>

@@ -104,10 +104,20 @@
       all = all.concat(oaResults);
     } catch (e) {}
     
-    // Only keep sources that have actual abstracts AND haven't been cited before
+    // Filter: must have abstract, not already cited, AND title must be relevant
+    var queryWords = query.toLowerCase().split(/\s+/).filter(function(w) { return w.length > 3; });
     all = all.filter(function (s) {
       if (!s.abstract || s.abstract.length < 50) return false;
-      if (citedTitles.has(s.title)) return false; // Skip already-cited
+      if (citedTitles.has(s.title)) return false;
+      // Title must share at least 1 keyword with the query
+      var titleLower = s.title.toLowerCase();
+      var titleMatch = queryWords.filter(function(w) { return titleLower.indexOf(w) >= 0; });
+      if (titleMatch.length === 0) {
+        // If title doesn't match, check abstract for keyword matches
+        var absLower = s.abstract.toLowerCase();
+        var absMatch = queryWords.filter(function(w) { return absLower.indexOf(w) >= 0; });
+        if (absMatch.length < 2) return false; // Need at least 2 keyword matches in abstract
+      }
       return true;
     });
     all.sort(function (a, b) { return b.citations - a.citations; });
@@ -147,18 +157,26 @@
     var relevantFindings = findingSentences.filter(function (s) {
       var lower = s.toLowerCase();
       var matches = claimKeywords.filter(function (k) { return lower.indexOf(k) >= 0; });
-      return matches.length >= 1;
+      return matches.length >= 2; // Require at least 2 keyword matches for relevance
     });
+
+    // Check if the source title itself is relevant to the claim
+    var titleLower = source.title.toLowerCase();
+    var titleRelevance = claimKeywords.filter(function (k) { return titleLower.indexOf(k) >= 0; }).length;
+
+    // Source is only substantive if it has RELEVANT findings (not just any findings)
+    var isRelevant = relevantFindings.length > 0 || titleRelevance >= 2;
 
     return {
       title: source.title,
-      // Use claim-relevant findings first, then any findings
-      findings: relevantFindings.length > 0 ? relevantFindings.join('. ') : findingSentences.join('. '),
+      // ONLY use claim-relevant findings — never fall back to irrelevant ones
+      findings: relevantFindings.length > 0 ? relevantFindings.join('. ') : '',
       data: dataSentences.join('. '),
       limitations: limitSentences.join('. '),
       methodology: methodSentences.join('. '),
       fullAbstract: abstract,
-      hasSubstance: findingSentences.length > 0 || dataSentences.length > 0
+      hasSubstance: isRelevant,
+      titleRelevance: titleRelevance
     };
   }
 

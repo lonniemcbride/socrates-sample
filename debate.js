@@ -113,9 +113,8 @@
       var combined = (s.title + ' ' + s.abstract).toLowerCase();
       var matchCount = queryWords.filter(function(w) { return combined.indexOf(w) >= 0; }).length;
       
-      // Require at least HALF of the query keywords to be present
-      // This ensures the paper is actually about the topic, not tangentially related
-      var threshold = Math.max(2, Math.ceil(queryWords.length / 2));
+      // Require at least 2 query keywords present (not half — that's too strict for niche topics)
+      var threshold = 2;
       return matchCount >= threshold;
     });
     all.sort(function (a, b) { return b.citations - a.citations; });
@@ -161,9 +160,9 @@
     var titleLower = source.title.toLowerCase();
     var titleRelevance = claimKeywords.filter(function (k) { return titleLower.indexOf(k) >= 0; }).length;
 
-    // Source must have multiple claim keywords in title+abstract to be considered relevant
+    // Source must have at least 2 claim keywords in title+abstract to be relevant
     var totalRelevance = absRelevance + titleRelevance;
-    var isRelevant = totalRelevance >= Math.max(2, Math.ceil(claimKeywords.length * 0.3));
+    var isRelevant = totalRelevance >= 2;
 
     // Only extract findings from relevant sources
     var relevantFindings = [];
@@ -190,17 +189,22 @@
 
   // --- Council Bot (argues FOR the claim) ---
   async function councilRound(claim, round, previousSenatorArg) {
-    // Search with focused keywords (not full claim text)
     var baseTerms = extractSearchTerms(claim);
+    // Many query variations to find relevant papers across rounds
     var queries = [
       baseTerms,
       baseTerms + ' evidence',
-      baseTerms + ' outcomes',
+      baseTerms + ' study',
+      baseTerms + ' research',
+      baseTerms + ' analysis',
       baseTerms + ' review',
-      baseTerms + ' study'
+      baseTerms + ' findings',
+      baseTerms + ' outcomes',
+      baseTerms + ' history',
+      baseTerms + ' impact'
     ];
-    var query = queries[round % queries.length] || queries[0];
-    if (round > 1 && previousSenatorArg) {
+    var query = queries[(round - 1) % queries.length];
+    if (round > 3 && previousSenatorArg) {
       query = extractSearchTerms(previousSenatorArg);
     }
 
@@ -269,13 +273,18 @@
     var queries = [
       baseTerms + ' criticism',
       baseTerms + ' limitations',
-      baseTerms + ' contradicts',
+      baseTerms + ' problems',
+      baseTerms + ' debate',
+      baseTerms + ' controversy',
+      baseTerms + ' challenges',
       baseTerms + ' negative',
-      baseTerms + ' problems'
+      baseTerms + ' alternative',
+      baseTerms + ' revisited',
+      baseTerms + ' reexamination'
     ];
-    var query = queries[round % queries.length] || queries[0];
-    if (round > 1 && previousCouncilArg) {
-      query = extractSearchTerms(previousCouncilArg) + ' limitations';
+    var query = queries[(round - 1) % queries.length];
+    if (round > 3 && previousCouncilArg) {
+      query = extractSearchTerms(previousCouncilArg) + ' criticism';
     }
 
     var sources = await searchSources(query);
@@ -516,8 +525,8 @@
 
       generateSummary();
       
-      // AUTO-END: if both bots failed to find new sources this round, stop
-      if (consecutiveEmptyRounds >= 2) {
+      // AUTO-END: only if BOTH bots failed for 3 CONSECUTIVE rounds
+      if (consecutiveEmptyRounds >= 6) {
         debateStatus.textContent = 'All available sources exhausted. Concluding debate.';
         renderArgument(councilFeed, 'council', currentRound, 'No further relevant academic sources could be found to support this claim. The available evidence has been presented.');
         renderArgument(senatorFeed, 'senator', currentRound, 'No further relevant academic sources could be found to challenge this claim. The available counter-evidence has been presented.');

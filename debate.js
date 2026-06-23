@@ -21,8 +21,9 @@
   var shouldStop = false;
   var evidenceLog = [];
   var currentRound = 0;
-  var citedTitles = new Set(); // Track already-cited papers to prevent repetition
-  var consecutiveEmptyRounds = 0; // Auto-end when both sides run dry
+  var councilCited = new Set(); // Track Council's cited papers separately
+  var senatorCited = new Set(); // Track Senator's cited papers separately
+  var consecutiveEmptyRounds = 0;
   // NO fixed round limit — debate continues until sources exhausted or user stops
 
   function logEvidence(entry) {
@@ -95,7 +96,7 @@
     } catch (e) { return []; }
   }
 
-  async function searchSources(query) {
+  async function searchSources(query, citedSet) {
     var all = [];
     
     // Search ALL sources in parallel for maximum coverage
@@ -110,11 +111,11 @@
       });
     } catch (e) {}
     
-    // STRICT relevance filter: source must actually be ABOUT the claim topic
+    // STRICT relevance filter
     var queryWords = query.toLowerCase().split(/\s+/).filter(function(w) { return w.length > 3; });
     all = all.filter(function (s) {
       if (!s.abstract || s.abstract.length < 50) return false;
-      if (citedTitles.has(s.title)) return false;
+      if (citedSet && citedSet.has(s.title)) return false; // Only check THIS bot's cited set
       var combined = (s.title + ' ' + s.abstract).toLowerCase();
       var matchCount = queryWords.filter(function(w) { return combined.indexOf(w) >= 0; }).length;
       return matchCount >= 2;
@@ -261,7 +262,7 @@
       query = extractSearchTerms(previousSenatorArg);
     }
 
-    var sources = await searchSources(query);
+    var sources = await searchSources(query, councilCited);
     var usable = sources.filter(function (s) {
       var a = analyzeSource(s, claim);
       return a && a.hasSubstance;
@@ -272,7 +273,7 @@
     if (usable.length > 0) {
       var src = usable[0];
       var analysis = analyzeSource(src, claim);
-      citedTitles.add(src.title); // Mark as cited
+      councilCited.add(src.title); // Mark as cited
 
       // Build argument FROM the source content
       if (round === 1) {
@@ -341,7 +342,7 @@
       query = extractSearchTerms(previousCouncilArg);
     }
 
-    var sources = await searchSources(query);
+    var sources = await searchSources(query, senatorCited);
     var usable = sources.filter(function (s) {
       var a = analyzeSource(s, claim);
       return a && a.hasSubstance;
@@ -352,7 +353,7 @@
     if (usable.length > 0) {
       var src = usable[0];
       var analysis = analyzeSource(src, claim);
-      citedTitles.add(src.title); // Mark as cited
+      senatorCited.add(src.title); // Mark as cited
 
       if (round === 1) {
         argument = 'Counter-evidence from "' + src.title + '" (' + src.authors + ', ' + src.year + '):\n\n';
@@ -576,7 +577,8 @@
     shouldStop = false;
     evidenceLog = [];
     currentRound = 0;
-    citedTitles.clear();
+    councilCited.clear();
+    senatorCited.clear();
     consecutiveEmptyRounds = 0;
     councilFeed.innerHTML = '';
     senatorFeed.innerHTML = '';

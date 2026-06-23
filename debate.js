@@ -96,7 +96,6 @@
   }
 
   async function searchSources(query) {
-    // OpenAlex is the only source (supports CORS natively)
     var all = [];
     
     try {
@@ -104,18 +103,20 @@
       all = all.concat(oaResults);
     } catch (e) {}
     
-    // Filter: must have abstract, not already cited, AND somewhat relevant
+    // STRICT relevance filter: source must actually be ABOUT the claim topic
     var queryWords = query.toLowerCase().split(/\s+/).filter(function(w) { return w.length > 3; });
     all = all.filter(function (s) {
       if (!s.abstract || s.abstract.length < 50) return false;
       if (citedTitles.has(s.title)) return false;
-      // At least 1 query word must appear in title or abstract
-      var titleLower = (s.title || '').toLowerCase();
-      var absLower = s.abstract.toLowerCase();
-      var anyMatch = queryWords.some(function(w) {
-        return titleLower.indexOf(w) >= 0 || absLower.indexOf(w) >= 0;
-      });
-      return anyMatch;
+      
+      // Count how many query keywords appear in title + abstract combined
+      var combined = (s.title + ' ' + s.abstract).toLowerCase();
+      var matchCount = queryWords.filter(function(w) { return combined.indexOf(w) >= 0; }).length;
+      
+      // Require at least HALF of the query keywords to be present
+      // This ensures the paper is actually about the topic, not tangentially related
+      var threshold = Math.max(2, Math.ceil(queryWords.length / 2));
+      return matchCount >= threshold;
     });
     all.sort(function (a, b) { return b.citations - a.citations; });
     return all;
@@ -149,24 +150,30 @@
       return /\b(randomized|meta-analysis|systematic review|longitudinal|cross-sectional|cohort|double-blind|controlled trial|survey of|experiment|sample of \d+)\b/i.test(s);
     });
 
-    // Determine relevance to the claim
+    // Determine relevance to the claim — STRICT check
     var claimKeywords = claim.toLowerCase().split(/\s+/).filter(function (w) { return w.length > 4; });
-    var relevantFindings = findingSentences.filter(function (s) {
-      var lower = s.toLowerCase();
-      var matches = claimKeywords.filter(function (k) { return lower.indexOf(k) >= 0; });
-      return matches.length >= 1; // At least 1 keyword match
-    });
-
-    // Check if the source title itself is relevant to the claim
+    
+    // Count how many claim keywords appear in the full abstract
+    var absLower = abstract.toLowerCase();
+    var absRelevance = claimKeywords.filter(function (k) { return absLower.indexOf(k) >= 0; }).length;
+    
+    // Check title relevance
     var titleLower = source.title.toLowerCase();
     var titleRelevance = claimKeywords.filter(function (k) { return titleLower.indexOf(k) >= 0; }).length;
 
-    // Check abstract relevance
-    var absLower = abstract.toLowerCase();
-    var absRelevance = claimKeywords.filter(function (k) { return absLower.indexOf(k) >= 0; }).length;
+    // Source must have multiple claim keywords in title+abstract to be considered relevant
+    var totalRelevance = absRelevance + titleRelevance;
+    var isRelevant = totalRelevance >= Math.max(2, Math.ceil(claimKeywords.length * 0.3));
 
-    // Source is substantive if title OR abstract matches the claim topic
-    var isRelevant = titleRelevance >= 1 || absRelevance >= 2 || relevantFindings.length > 0;
+    // Only extract findings from relevant sources
+    var relevantFindings = [];
+    if (isRelevant) {
+      relevantFindings = findingSentences.filter(function (s) {
+        var lower = s.toLowerCase();
+        var matches = claimKeywords.filter(function (k) { return lower.indexOf(k) >= 0; });
+        return matches.length >= 1;
+      });
+    }
 
     return {
       title: source.title,

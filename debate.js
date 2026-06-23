@@ -176,7 +176,7 @@
       limitations: isRelevant ? limitSentences.join('. ') : '',
       methodology: isRelevant ? methodSentences.join('. ') : '',
       fullAbstract: abstract,
-      hasSubstance: isRelevant && (findingSentences.length > 0 || dataSentences.length > 0),
+      hasSubstance: isRelevant,
       titleRelevance: titleRelevance
     };
   }
@@ -210,15 +210,20 @@
       var analysis = analyzeSource(src, claim);
       citedTitles.add(src.title); // Mark as cited
 
-      // Build argument FROM the source content — not generic rhetoric
+      // Build argument FROM the source content
       if (round === 1) {
         argument = 'Supporting evidence from "' + src.title + '" (' + src.authors + ', ' + src.year + '):\n\n';
       } else {
-        argument = 'Responding with additional evidence from "' + src.title + '" (' + src.year + '):\n\n';
+        argument = 'Additional evidence from "' + src.title + '" (' + src.year + '):\n\n';
       }
 
       if (analysis.findings) {
         argument += 'Key findings: ' + analysis.findings + '.\n\n';
+      } else if (analysis.fullAbstract) {
+        // Use first substantive sentences from abstract if no specific findings extracted
+        var sentences = analysis.fullAbstract.split(/\.\s+/).filter(function(s) { return s.trim().length > 30; });
+        var relevant = sentences.slice(0, 3).join('. ');
+        if (relevant) argument += 'From the abstract: ' + relevant + '.\n\n';
       }
       if (analysis.data) {
         argument += 'Statistical evidence: ' + analysis.data + '.\n\n';
@@ -229,9 +234,7 @@
 
       // Address Senator's previous point if applicable
       if (round > 1 && previousSenatorArg) {
-        argument += 'Addressing the previous counter-argument: This evidence directly supports the original claim because the study\'s findings were derived from ' +
-          (analysis.methodology ? analysis.methodology.substring(0, 100) : 'rigorous methodology') +
-          ', which addresses the concerns raised.';
+        argument += 'This evidence addresses the previous counter-argument by providing additional context from peer-reviewed research.';
       }
 
       logEvidence({
@@ -289,6 +292,10 @@
 
       if (analysis.findings) {
         argument += 'Findings that complicate the claim: ' + analysis.findings + '.\n\n';
+      } else if (analysis.fullAbstract) {
+        var sentences = analysis.fullAbstract.split(/\.\s+/).filter(function(s) { return s.trim().length > 30; });
+        var relevant = sentences.slice(0, 3).join('. ');
+        if (relevant) argument += 'From the abstract: ' + relevant + '.\n\n';
       }
       if (analysis.limitations) {
         argument += 'Limitations noted: ' + analysis.limitations + '.\n\n';
@@ -299,8 +306,7 @@
 
       // Directly address Council's evidence
       if (round > 1 && previousCouncilArg) {
-        argument += 'Regarding the Council\'s cited evidence: These findings suggest the relationship is more conditional than presented. ' +
-          (analysis.limitations ? 'Specifically, the literature notes: ' + analysis.limitations.substring(0, 200) + '.' : 'The evidence base has gaps that weaken the universal application of this claim.');
+        argument += 'This research suggests the picture is more nuanced than the Council\'s evidence indicates.';
       }
 
       logEvidence({

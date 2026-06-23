@@ -104,21 +104,18 @@
       all = all.concat(oaResults);
     } catch (e) {}
     
-    // Filter: must have abstract, not already cited, AND title must be relevant
+    // Filter: must have abstract, not already cited, AND somewhat relevant
     var queryWords = query.toLowerCase().split(/\s+/).filter(function(w) { return w.length > 3; });
     all = all.filter(function (s) {
       if (!s.abstract || s.abstract.length < 50) return false;
       if (citedTitles.has(s.title)) return false;
-      // Title must share at least 1 keyword with the query
-      var titleLower = s.title.toLowerCase();
-      var titleMatch = queryWords.filter(function(w) { return titleLower.indexOf(w) >= 0; });
-      if (titleMatch.length === 0) {
-        // If title doesn't match, check abstract for keyword matches
-        var absLower = s.abstract.toLowerCase();
-        var absMatch = queryWords.filter(function(w) { return absLower.indexOf(w) >= 0; });
-        if (absMatch.length < 2) return false; // Need at least 2 keyword matches in abstract
-      }
-      return true;
+      // At least 1 query word must appear in title or abstract
+      var titleLower = (s.title || '').toLowerCase();
+      var absLower = s.abstract.toLowerCase();
+      var anyMatch = queryWords.some(function(w) {
+        return titleLower.indexOf(w) >= 0 || absLower.indexOf(w) >= 0;
+      });
+      return anyMatch;
     });
     all.sort(function (a, b) { return b.citations - a.citations; });
     return all;
@@ -157,25 +154,29 @@
     var relevantFindings = findingSentences.filter(function (s) {
       var lower = s.toLowerCase();
       var matches = claimKeywords.filter(function (k) { return lower.indexOf(k) >= 0; });
-      return matches.length >= 2; // Require at least 2 keyword matches for relevance
+      return matches.length >= 1; // At least 1 keyword match
     });
 
     // Check if the source title itself is relevant to the claim
     var titleLower = source.title.toLowerCase();
     var titleRelevance = claimKeywords.filter(function (k) { return titleLower.indexOf(k) >= 0; }).length;
 
-    // Source is only substantive if it has RELEVANT findings (not just any findings)
-    var isRelevant = relevantFindings.length > 0 || titleRelevance >= 2;
+    // Check abstract relevance
+    var absLower = abstract.toLowerCase();
+    var absRelevance = claimKeywords.filter(function (k) { return absLower.indexOf(k) >= 0; }).length;
+
+    // Source is substantive if title OR abstract matches the claim topic
+    var isRelevant = titleRelevance >= 1 || absRelevance >= 2 || relevantFindings.length > 0;
 
     return {
       title: source.title,
-      // ONLY use claim-relevant findings — never fall back to irrelevant ones
-      findings: relevantFindings.length > 0 ? relevantFindings.join('. ') : '',
-      data: dataSentences.join('. '),
-      limitations: limitSentences.join('. '),
-      methodology: methodSentences.join('. '),
+      // Use relevant findings if available, otherwise use any findings from a relevant source
+      findings: relevantFindings.length > 0 ? relevantFindings.join('. ') : (isRelevant ? findingSentences.join('. ') : ''),
+      data: isRelevant ? dataSentences.join('. ') : '',
+      limitations: isRelevant ? limitSentences.join('. ') : '',
+      methodology: isRelevant ? methodSentences.join('. ') : '',
       fullAbstract: abstract,
-      hasSubstance: isRelevant,
+      hasSubstance: isRelevant && (findingSentences.length > 0 || dataSentences.length > 0),
       titleRelevance: titleRelevance
     };
   }
@@ -505,6 +506,8 @@
       // AUTO-END: if both bots failed to find new sources this round, stop
       if (consecutiveEmptyRounds >= 2) {
         debateStatus.textContent = 'All available sources exhausted. Concluding debate.';
+        renderArgument(councilFeed, 'council', currentRound, 'No further relevant academic sources could be found to support this claim. The available evidence has been presented.');
+        renderArgument(senatorFeed, 'senator', currentRound, 'No further relevant academic sources could be found to challenge this claim. The available counter-evidence has been presented.');
         break;
       }
       

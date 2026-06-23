@@ -323,21 +323,22 @@
   // --- Senator Bot (argues AGAINST the claim) ---
   async function senatorRound(claim, round, previousCouncilArg) {
     var baseTerms = extractSearchTerms(claim);
+    // Use the SAME base search as Council — but look for limitations/caveats in results
     var queries = [
-      baseTerms + ' criticism',
-      baseTerms + ' limitations',
-      baseTerms + ' problems',
+      baseTerms,
+      baseTerms + ' review',
+      baseTerms + ' analysis',
+      baseTerms + ' history',
+      baseTerms + ' context',
       baseTerms + ' debate',
-      baseTerms + ' controversy',
-      baseTerms + ' challenges',
-      baseTerms + ' negative',
-      baseTerms + ' alternative',
-      baseTerms + ' revisited',
-      baseTerms + ' reexamination'
+      baseTerms + ' interpretation',
+      baseTerms + ' perspective',
+      baseTerms + ' study',
+      baseTerms + ' research'
     ];
     var query = queries[(round - 1) % queries.length];
     if (round > 3 && previousCouncilArg) {
-      query = extractSearchTerms(previousCouncilArg) + ' criticism';
+      query = extractSearchTerms(previousCouncilArg);
     }
 
     var sources = await searchSources(query);
@@ -439,21 +440,68 @@
       summaryContent.appendChild(roundCard);
     }
 
-    // Verdict (only after stop)
+    // Verdict and detailed summary (only after stop)
     if (shouldStop || !isDebating) {
       var councilStrong = councilEvidence.filter(function (e) { return e.findings && e.findings.length > 20; }).length;
       var senatorStrong = senatorEvidence.filter(function (e) { return e.findings && e.findings.length > 20; }).length;
       var verdictDiv = document.createElement('div');
       verdictDiv.className = 'summary-card';
+      
       var verdict = '';
       if (councilStrong > senatorStrong + 1) {
-        verdict = 'The evidence leans toward supporting the original claim. Council cited ' + councilStrong + ' substantive sources vs Senator\'s ' + senatorStrong + '.';
+        verdict = 'The evidence leans toward supporting the original claim.';
       } else if (senatorStrong > councilStrong + 1) {
-        verdict = 'The counter-evidence is compelling. Senator cited ' + senatorStrong + ' substantive sources vs Council\'s ' + councilStrong + '.';
+        verdict = 'The counter-evidence is compelling and challenges the original claim.';
       } else {
-        verdict = 'The debate is closely matched (' + councilStrong + ' vs ' + senatorStrong + ' substantive sources). This topic has genuine complexity.';
+        verdict = 'The debate is closely matched. This topic has genuine complexity.';
       }
-      verdictDiv.innerHTML = '<h3>Verdict</h3><div class="verdict">' + verdict + '</div>';
+      
+      // Build detailed written summary
+      var summary = '<h3>Final Summary</h3>';
+      summary += '<div class="verdict"><strong>Verdict:</strong> ' + verdict + '</div>';
+      summary += '<div style="margin-top:12px;font-size:12px;line-height:1.7;color:#e0e0e5;">';
+      summary += '<p style="margin-bottom:8px;"><strong>Debate Overview:</strong> This debate ran for ' + currentRound + ' rounds. ';
+      summary += 'The Council cited ' + councilStrong + ' substantive source' + (councilStrong !== 1 ? 's' : '') + ' in support of the claim, ';
+      summary += 'while the Senator cited ' + senatorStrong + ' substantive source' + (senatorStrong !== 1 ? 's' : '') + ' against it.</p>';
+      
+      // Council's key evidence summary
+      if (councilStrong > 0) {
+        summary += '<p style="margin-bottom:8px;"><strong style="color:#10b981;">Council\'s strongest evidence:</strong> ';
+        var councilBest = councilEvidence.filter(function(e) { return e.findings && e.findings.length > 20; });
+        councilBest.slice(0, 3).forEach(function(e, i) {
+          if (i > 0) summary += ' Additionally, ';
+          summary += '"' + e.sourceTitle + '" (' + (e.sourceYear || 'n.d.') + ') ';
+          if (e.findings) summary += 'found: ' + e.findings.substring(0, 200) + (e.findings.length > 200 ? '...' : '') + '. ';
+          if (e.data) summary += '(Data: ' + e.data.substring(0, 100) + ') ';
+        });
+        summary += '</p>';
+      }
+      
+      // Senator's key evidence summary
+      if (senatorStrong > 0) {
+        summary += '<p style="margin-bottom:8px;"><strong style="color:#f59e0b;">Senator\'s strongest counter-evidence:</strong> ';
+        var senatorBest = senatorEvidence.filter(function(e) { return e.findings && e.findings.length > 20; });
+        senatorBest.slice(0, 3).forEach(function(e, i) {
+          if (i > 0) summary += ' Furthermore, ';
+          summary += '"' + e.sourceTitle + '" (' + (e.sourceYear || 'n.d.') + ') ';
+          if (e.findings) summary += 'indicates: ' + e.findings.substring(0, 200) + (e.findings.length > 200 ? '...' : '') + '. ';
+          if (e.limitations) summary += '(Limitations: ' + e.limitations.substring(0, 100) + ') ';
+        });
+        summary += '</p>';
+      }
+      
+      // Conclusion
+      summary += '<p style="margin-bottom:0;"><strong>Conclusion:</strong> ';
+      if (councilStrong > senatorStrong + 1) {
+        summary += 'The peer-reviewed evidence available through OpenAlex, Europe PMC, and Crossref more strongly supports the original claim than contradicts it. The Council presented more substantive, directly relevant sources. However, the Senator\'s objections regarding ' + (senatorStrong > 0 ? 'methodology and scope' : 'the limits of available evidence') + ' remain worth considering.';
+      } else if (senatorStrong > councilStrong + 1) {
+        summary += 'The available academic literature raises significant challenges to the original claim. The Senator presented more substantive counter-evidence than the Council could support. The claim may require significant qualification or revision to be considered well-supported.';
+      } else {
+        summary += 'The academic literature does not clearly resolve this debate in either direction. Both sides presented relevant evidence, suggesting this is a genuinely contested question in the research community. Further investigation with more specific search terms or direct access to specialized databases may be needed.';
+      }
+      summary += '</p></div>';
+      
+      verdictDiv.innerHTML = summary;
       summaryContent.appendChild(verdictDiv);
     }
 

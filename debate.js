@@ -98,9 +98,16 @@
   async function searchSources(query) {
     var all = [];
     
+    // Search ALL sources in parallel for maximum coverage
     try {
-      var oaResults = await searchOpenAlex(query);
-      all = all.concat(oaResults);
+      var results = await Promise.allSettled([
+        searchOpenAlex(query),
+        searchEuropePMC(query),
+        searchCrossref(query)
+      ]);
+      results.forEach(function(r) {
+        if (r.status === 'fulfilled') all = all.concat(r.value);
+      });
     } catch (e) {}
     
     // STRICT relevance filter: source must actually be ABOUT the claim topic
@@ -108,17 +115,63 @@
     all = all.filter(function (s) {
       if (!s.abstract || s.abstract.length < 50) return false;
       if (citedTitles.has(s.title)) return false;
-      
-      // Count how many query keywords appear in title + abstract combined
       var combined = (s.title + ' ' + s.abstract).toLowerCase();
       var matchCount = queryWords.filter(function(w) { return combined.indexOf(w) >= 0; }).length;
-      
-      // Require at least 2 query keywords present (not half — that's too strict for niche topics)
-      var threshold = 2;
-      return matchCount >= threshold;
+      return matchCount >= 2;
     });
     all.sort(function (a, b) { return b.citations - a.citations; });
     return all;
+  }
+
+  // Europe PMC — 46M+ biomedical/life science papers (CORS supported)
+  async function searchEuropePMC(query) {
+    try {
+      var apiUrl = 'https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=' +
+        encodeURIComponent(query.substring(0, 200)) +
+        '&resultType=core&pageSize=5&format=json';
+      var resp = await fetch(apiUrl);
+      if (!resp.ok) return [];
+      var data = await resp.json();
+      if (!data.resultList || !data.resultList.result) return [];
+      return data.resultList.result.map(function(p) {
+        return {
+          title: p.title || '',
+          abstract: p.abstractText || '',
+          year: p.pubYear ? parseInt(p.pubYear) : null,
+          authors: p.authorString || '',
+          citations: p.citedByCount || 0,
+          url: p.doi ? 'https://doi.org/' + p.doi : ''
+        };
+      });
+    } catch (e) { return []; }
+  }
+
+  // Crossref — 130M+ scholarly works with abstracts (CORS supported)
+  async function searchCrossref(query) {
+    try {
+      var apiUrl = 'https://api.crossref.org/works?query=' +
+        encodeURIComponent(query.substring(0, 200)) +
+        '&rows=5&select=title,abstract,author,published-print,is-referenced-by-count,DOI&mailto=senator-app@example.com';
+      var resp = await fetch(apiUrl);
+      if (!resp.ok) return [];
+      var data = await resp.json();
+      if (!data.message || !data.message.items) return [];
+      return data.message.items.map(function(w) {
+        var authors = w.author ? w.author.slice(0, 3).map(function(a) {
+          return (a.given || '') + ' ' + (a.family || '');
+        }).join(', ') : '';
+        var year = w['published-print'] && w['published-print']['date-parts'] && w['published-print']['date-parts'][0] ? w['published-print']['date-parts'][0][0] : null;
+        var abstract = w.abstract ? w.abstract.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() : '';
+        return {
+          title: Array.isArray(w.title) ? w.title[0] : (w.title || ''),
+          abstract: abstract,
+          year: year,
+          authors: authors,
+          citations: w['is-referenced-by-count'] || 0,
+          url: w.DOI ? 'https://doi.org/' + w.DOI : ''
+        };
+      });
+    } catch (e) { return []; }
   }
 
   // --- Source Analysis ---
